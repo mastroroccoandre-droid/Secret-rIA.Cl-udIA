@@ -240,7 +240,7 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
 </div>
 
 <script>
-const API_KEY = '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';
+
 const API_URL = '/api/claude';
 
 const COLORS={trabalho:'#4A7CF7',saude:'#3DBD8A',lazer:'#E8A020',familia:'#E05C6A',pessoal:'#9B6EE0',outro:'#8A8A94'};
@@ -280,6 +280,9 @@ async function callAPI(messages, system, maxTokens=800){
     method:'POST',
     headers:{
       'Content-Type':'application/json',
+      
+      
+      
     },
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTokens,system,messages})
   });
