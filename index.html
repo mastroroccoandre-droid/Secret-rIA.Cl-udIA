@@ -21,8 +21,19 @@ body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--t
 button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 
-#header{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--border);background:rgba(12,12,14,0.95);backdrop-filter:blur(20px);position:relative;z-index:100;flex-shrink:0;}
-#logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;letter-spacing:-0.3px;}
+/* LOGIN SCREEN */
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:8000}
+#login-screen.hidden{display:none}
+.login-box{max-width:380px;width:100%;text-align:center}
+.login-logo{font-family:'Playfair Display',serif;font-size:48px;font-weight:500;margin-bottom:12px}
+.login-logo span{color:var(--accent)}
+.login-sub{color:var(--text2);font-size:14px;line-height:1.6;margin-bottom:40px}
+.google-btn{width:100%;padding:14px 20px;border-radius:var(--r-md);border:1px solid var(--border2);background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:500;transition:all var(--transition)}
+.google-btn:hover{background:var(--surface2);border-color:var(--accent)}
+.google-btn svg{width:20px;height:20px}
+
+#header{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--border);background:rgba(12,12,14,0.95);backdrop-filter:blur(20px);position:relative;z-index:100;flex-shrink:0;gap:16px}
+#logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;letter-spacing:-0.3px;flex-shrink:0}
 #logo span{color:var(--accent)}
 #nav{display:flex;gap:2px;background:var(--surface2);border-radius:12px;padding:3px;border:1px solid var(--border)}
 .nav-btn{padding:6px 14px;border-radius:9px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:all var(--transition);white-space:nowrap;}
@@ -32,6 +43,17 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
 .icon-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all var(--transition)}
 .icon-btn:hover{border-color:var(--accent);color:var(--accent)}
 .icon-btn.active{background:var(--accent);color:#1A1408;border-color:var(--accent)}
+#user-avatar{width:36px;height:36px;border-radius:50%;cursor:pointer;object-fit:cover;border:1px solid var(--border2);transition:all var(--transition)}
+#user-avatar:hover{border-color:var(--accent)}
+
+#user-menu{position:absolute;top:54px;right:20px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-md);padding:8px;min-width:240px;box-shadow:var(--shadow);z-index:200;display:none}
+#user-menu.open{display:block;animation:fadeUp 0.15s ease}
+.user-menu-header{padding:12px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.user-menu-name{font-size:14px;font-weight:500;margin-bottom:2px}
+.user-menu-email{font-size:12px;color:var(--text2)}
+.user-menu-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-sm);cursor:pointer;font-size:13px;color:var(--text);transition:background var(--transition)}
+.user-menu-item:hover{background:var(--surface2)}
+.user-menu-item.danger{color:var(--red)}
 
 #app{display:flex;flex:1;overflow:hidden}
 .view{display:none;flex:1;flex-direction:column;overflow:hidden}
@@ -75,6 +97,7 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
 .ev-card{border-radius:var(--r-md);border:1px solid var(--border);background:var(--surface);padding:14px;margin-bottom:10px;cursor:pointer;transition:all var(--transition);border-left-width:3px;position:relative;}
 .ev-card:hover{background:var(--surface2);transform:translateX(2px)}
 .ev-card.focus-card{background:rgba(155,110,224,0.06);border-color:rgba(155,110,224,0.3)}
+.ev-card.shared{border-style:dashed}
 .ev-time{font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;letter-spacing:0.3px}
 .ev-title{font-size:14px;font-weight:500;margin-bottom:4px;color:var(--text)}
 .ev-loc{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:4px;cursor:pointer}
@@ -154,6 +177,14 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
 .form-label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;display:block}
 .form-input,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 14px;font-size:14px;color:var(--text);outline:none}
 
+.attendees-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.attendee{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border-radius:var(--r-sm);font-size:13px}
+.attendee-status{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.attendee-status.pending{background:rgba(232,160,32,0.15);color:var(--yellow)}
+.attendee-status.accepted{background:rgba(61,189,138,0.15);color:var(--green)}
+.attendee-status.declined{background:rgba(224,92,106,0.15);color:var(--red)}
+.attendee-remove{margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px}
+
 .empty{padding:48px 24px;text-align:center;color:var(--text3)}
 .empty-icon{font-size:36px;margin-bottom:12px;opacity:0.4}
 .empty-text{font-size:14px;line-height:1.6}
@@ -183,8 +214,9 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
   #voice-bar{padding:12px 16px}
   #chat-messages{padding:16px}
   #cal-wrap{padding:16px}
-  #header{padding:0 16px}
+  #header{padding:0 16px;gap:8px}
   #header-actions .icon-btn{width:32px;height:32px}
+  #user-avatar{width:32px;height:32px}
 }
 </style>
 </head>
@@ -193,6 +225,19 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
 <div id="loading-overlay">
   <div class="loader"></div>
   <div style="font-family:'Playfair Display',serif;font-size:22px;color:var(--accent)">claudia<span style="color:var(--text)">.</span></div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="hidden">
+  <div class="login-box">
+    <div class="login-logo">claudia<span>.</span></div>
+    <div class="login-sub">Sua assistente pessoal inteligente.<br/>Faça login para acessar sua agenda.</div>
+    <button class="google-btn" onclick="loginWithGoogle()">
+      <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5h-1.9v-.1H24v7.6h11.3c-1.6 4.4-5.8 7.6-11.3 7.6-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.4-5.4C33.6 6.1 29 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.3 4.6c1.7-4.2 5.8-7.2 10.4-7.2 3.1 0 5.9 1.2 8 3l5.4-5.4C33.6 6.1 29 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5 0 9.5-1.9 12.9-5.1l-6-5.1c-2 1.4-4.4 2.2-6.9 2.2-5.4 0-10-3.5-11.6-8.4l-6.3 4.9C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5h-1.9v-.1H24v7.6h11.3c-.8 2.2-2.2 4-4 5.3l6 5.1c-.4.4 6.5-4.7 6.5-14 0-1.3-.1-2.6-.4-3.9z"/></svg>
+      Entrar com Google
+    </button>
+    <div style="margin-top:24px;font-size:12px;color:var(--text3);line-height:1.6">Ao entrar, você concorda em sincronizar seus dados com segurança.</div>
+  </div>
 </div>
 
 <div id="header">
@@ -206,7 +251,18 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
   <div id="header-actions">
     <button class="icon-btn" id="notif-btn" onclick="toggleNotifications()" title="Notificações">🔔</button>
     <button class="icon-btn" onclick="openFocusModal()" title="Modo foco">🌙</button>
+    <button class="icon-btn" onclick="syncGoogleCalendar()" title="Sincronizar Google Calendar">🔄</button>
+    <img id="user-avatar" src="" onclick="toggleUserMenu(event)"/>
   </div>
+</div>
+
+<div id="user-menu">
+  <div class="user-menu-header">
+    <div class="user-menu-name" id="user-name"></div>
+    <div class="user-menu-email" id="user-email"></div>
+  </div>
+  <div class="user-menu-item" onclick="syncGoogleCalendar()">🔄 Sincronizar Google Calendar</div>
+  <div class="user-menu-item danger" onclick="logout()">↩ Sair</div>
 </div>
 
 <div id="app">
@@ -257,6 +313,7 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
         <button class="quick-btn" onclick="askInChat('O que tenho amanhã?')">Amanhã</button>
         <button class="quick-btn" onclick="askInChat('Como está minha semana?')">Esta semana</button>
         <button class="quick-btn" onclick="askInChat('Qual meu próximo compromisso?')">Próximo</button>
+        <button class="quick-btn" onclick="askInChat('Quais padrões você identificou na minha rotina?')">Meus padrões</button>
       </div>
       <div id="chat-messages"></div>
       <div id="chat-input-row">
@@ -292,7 +349,6 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
 const SUPABASE_URL = 'https://ffvhokahvmfhjioczdfc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ol0yfe-VfuxgkkVeXKRAkA_VF7ODO_a';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 const API_URL = '/api/claude';
 
 const COLORS={trabalho:'#4A7CF7',saude:'#3DBD8A',lazer:'#E8A020',familia:'#E05C6A',pessoal:'#9B6EE0',outro:'#8A8A94'};
@@ -309,12 +365,14 @@ const REMINDER_OPTS=[
   {value:'1440',label:'1 dia antes'},
 ];
 
-let events=[],intentions=[],contacts=[];
-let chatHistory=[{role:'assistant',content:'Olá, André! Sou a Claudia, sua assistente pessoal. Posso criar compromissos por voz, texto ou imagem de convites, responder sobre sua agenda, ativar modo foco e enviar lembretes. Como posso ajudar?'}];
+let currentUser=null;
+let events=[],intentions=[],contacts=[],patterns=[],attendees={};
+let chatHistory=[];
 let currentDate=new Date(),selectedDate=new Date();
 let recognition=null,isRecording=false,pendingAI=null,attachedFile=null;
 let firedReminders=new Set();
 let notificationsEnabled=false;
+let pendingAttendees=[];
 
 function uid(){return Math.random().toString(36).substr(2,9)+Date.now().toString(36)}
 function todayISO(){const d=new Date();return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
@@ -336,16 +394,50 @@ function showToast(msg,type){
   setTimeout(()=>t.className='',5000);
 }
 
+// ── AUTH ──
+async function loginWithGoogle(){
+  const{error}=await sb.auth.signInWithOAuth({
+    provider:'google',
+    options:{
+      scopes:'https://www.googleapis.com/auth/calendar.events email profile',
+      queryParams:{access_type:'offline',prompt:'consent'},
+      redirectTo:window.location.origin
+    }
+  });
+  if(error)alert('Erro: '+error.message);
+}
+
+async function logout(){
+  await sb.auth.signOut();
+  location.reload();
+}
+
+function toggleUserMenu(e){
+  e.stopPropagation();
+  document.getElementById('user-menu').classList.toggle('open');
+}
+document.addEventListener('click',()=>document.getElementById('user-menu').classList.remove('open'));
+
 // ── DATA LAYER ──
 async function loadAll(){
-  const [e,i,c]=await Promise.all([
+  const [e,i,c,p]=await Promise.all([
     sb.from('events').select('*').order('date'),
     sb.from('intentions').select('*').order('created_at',{ascending:false}),
     sb.from('contacts').select('*').order('name'),
+    sb.from('patterns').select('*').order('confidence',{ascending:false}),
   ]);
   events=e.data||[];
   intentions=i.data||[];
   contacts=c.data||[];
+  patterns=p.data||[];
+
+  // Load attendees for all events
+  const{data:atts}=await sb.from('event_attendees').select('*');
+  attendees={};
+  (atts||[]).forEach(a=>{
+    if(!attendees[a.event_id])attendees[a.event_id]=[];
+    attendees[a.event_id].push(a);
+  });
 }
 
 async function expandRecurringEvents(){
@@ -376,21 +468,20 @@ let displayEvents=[];
 async function refreshEvents(){displayEvents=await expandRecurringEvents();}
 
 async function saveEvent(ev){
+  ev.owner_id=currentUser.id;
   const{data,error}=await sb.from('events').insert(ev).select();
   if(error){console.error(error);alert('Erro: '+error.message);return null;}
-  events.push(data[0]);await refreshEvents();return data[0];
-}
-async function updateEvent(id,patch){
-  const{data,error}=await sb.from('events').update(patch).eq('id',id).select();
-  if(error){console.error(error);return null;}
-  const idx=events.findIndex(e=>e.id===id);if(idx>=0)events[idx]=data[0];
-  await refreshEvents();return data[0];
+  events.push(data[0]);await refreshEvents();
+  // Learn patterns
+  await learnPattern(data[0]);
+  return data[0];
 }
 async function deleteEventDB(id){
   await sb.from('events').delete().eq('id',id);
   events=events.filter(e=>e.id!==id);await refreshEvents();
 }
 async function saveIntention(it){
+  it.owner_id=currentUser.id;
   const{data,error}=await sb.from('intentions').insert(it).select();
   if(error){console.error(error);return null;}
   intentions.unshift(data[0]);return data[0];
@@ -400,6 +491,7 @@ async function deleteIntentionDB(id){
   intentions=intentions.filter(i=>i.id!==id);
 }
 async function saveContact(c){
+  c.owner_id=currentUser.id;
   const{data,error}=await sb.from('contacts').insert(c).select();
   if(error){console.error(error);return null;}
   contacts.push(data[0]);contacts.sort((a,b)=>a.name.localeCompare(b.name));return data[0];
@@ -407,6 +499,104 @@ async function saveContact(c){
 async function deleteContactDB(id){
   await sb.from('contacts').delete().eq('id',id);
   contacts=contacts.filter(c=>c.id!==id);
+}
+
+async function addAttendee(eventId,email){
+  const{data,error}=await sb.from('event_attendees').insert({event_id:eventId,email,status:'pending'}).select();
+  if(error){console.error(error);return null;}
+  if(!attendees[eventId])attendees[eventId]=[];
+  attendees[eventId].push(data[0]);
+  return data[0];
+}
+
+async function removeAttendee(attId){
+  await sb.from('event_attendees').delete().eq('id',attId);
+  for(const eid in attendees){
+    attendees[eid]=attendees[eid].filter(a=>a.id!==attId);
+  }
+}
+
+async function updateAttendeeStatus(attId,status){
+  const{data}=await sb.from('event_attendees').update({status}).eq('id',attId).select();
+  if(data&&data[0]){
+    const a=data[0];
+    if(attendees[a.event_id]){
+      const idx=attendees[a.event_id].findIndex(x=>x.id===attId);
+      if(idx>=0)attendees[a.event_id][idx]=a;
+    }
+  }
+}
+
+// ── BEHAVIORAL MEMORY ──
+async function learnPattern(ev){
+  // Learn from new event
+  if(ev.time&&ev.category){
+    await upsertPattern('time_preference',ev.category,ev.time);
+  }
+  if(ev.location&&ev.category){
+    await upsertPattern('location',ev.category,ev.location);
+  }
+}
+
+async function upsertPattern(type,context,value){
+  const existing=patterns.find(p=>p.pattern_type===type&&p.context===context&&p.value===value);
+  if(existing){
+    await sb.from('patterns').update({confidence:existing.confidence+1,updated_at:new Date().toISOString()}).eq('id',existing.id);
+    existing.confidence+=1;
+  } else {
+    const{data}=await sb.from('patterns').insert({owner_id:currentUser.id,pattern_type:type,context,value,confidence:1}).select();
+    if(data&&data[0])patterns.push(data[0]);
+  }
+}
+
+// ── GOOGLE CALENDAR SYNC ──
+async function syncGoogleCalendar(){
+  document.getElementById('user-menu').classList.remove('open');
+  setStatus('Sincronizando Google Calendar...','loading',true);
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    const token=session?.provider_token;
+    if(!token){
+      setStatus('','',false);
+      alert('Sessão expirada. Faça login novamente para sincronizar.');
+      return;
+    }
+    const timeMin=new Date();timeMin.setDate(timeMin.getDate()-7);
+    const timeMax=new Date();timeMax.setDate(timeMax.getDate()+90);
+    const res=await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin.toISOString()}&timeMax=${timeMax.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=100`,{
+      headers:{Authorization:`Bearer ${token}`}
+    });
+    const data=await res.json();
+    if(data.error){
+      setStatus('','',false);
+      alert('Erro: '+data.error.message);
+      return;
+    }
+    let imported=0;
+    for(const gev of (data.items||[])){
+      if(!gev.start)continue;
+      const startDate=gev.start.date||gev.start.dateTime?.split('T')[0];
+      const startTime=gev.start.dateTime?gev.start.dateTime.split('T')[1].substring(0,5):null;
+      const exists=events.find(e=>e.title===gev.summary&&e.date===startDate);
+      if(exists)continue;
+      await saveEvent({
+        id:uid(),
+        title:gev.summary||'Sem título',
+        date:startDate,time:startTime,
+        category:'outro',type:'individual',
+        location:gev.location||null,
+        notes:gev.description||null,
+        recurrence:'none',is_focus:false,reminder_minutes:null
+      });
+      imported++;
+    }
+    setStatus('','',false);
+    showToast(`✓ ${imported} eventos importados do Google Calendar`);
+    renderCalendar();renderSidebar();renderTodaySummary();
+  }catch(e){
+    setStatus('','',false);
+    alert('Erro: '+e.message);
+  }
 }
 
 // ── API ──
@@ -440,7 +630,7 @@ async function toggleNotifications(){
 function sendNotification(title,body){
   showToast(`🔔 ${title}: ${body}`,'reminder');
   if(notificationsEnabled&&Notification.permission==='granted'){
-    new Notification(title,{body,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="%23C8A96E"/></svg>'});
+    new Notification(title,{body});
   }
 }
 
@@ -469,24 +659,12 @@ function openFocusModal(){
       <div class="modal-title">🌙 Modo Foco</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.5">Bloqueie um período como indisponível. A Claudia evitará sugerir esse horário para novos eventos.</div>
-    <div class="form-row">
-      <label class="form-label">Título</label>
-      <input class="form-input" id="focus-title" value="Indisponível" />
-    </div>
-    <div class="form-row">
-      <label class="form-label">Data</label>
-      <input class="form-input" id="focus-date" type="date" value="${todayStr}" />
-    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.5">Bloqueie um período como indisponível.</div>
+    <div class="form-row"><label class="form-label">Título</label><input class="form-input" id="focus-title" value="Indisponível" /></div>
+    <div class="form-row"><label class="form-label">Data</label><input class="form-input" id="focus-date" type="date" value="${todayStr}" /></div>
     <div style="display:flex;gap:10px">
-      <div class="form-row" style="flex:1">
-        <label class="form-label">Início</label>
-        <input class="form-input" id="focus-start" type="time" value="09:00" />
-      </div>
-      <div class="form-row" style="flex:1">
-        <label class="form-label">Fim</label>
-        <input class="form-input" id="focus-end" type="time" value="18:00" />
-      </div>
+      <div class="form-row" style="flex:1"><label class="form-label">Início</label><input class="form-input" id="focus-start" type="time" value="09:00" /></div>
+      <div class="form-row" style="flex:1"><label class="form-label">Fim</label><input class="form-input" id="focus-end" type="time" value="18:00" /></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
@@ -500,18 +678,10 @@ async function createFocusBlock(){
   const date=document.getElementById('focus-date').value;
   const start=document.getElementById('focus-start').value;
   const end=document.getElementById('focus-end').value;
-  const ev={
-    id:uid(),
-    title:`🌙 ${title} (${start}-${end})`,
-    date,time:start,
-    category:'pessoal',type:'individual',
-    location:null,notes:`Modo foco até ${end}`,
-    recurrence:'none',is_focus:true,reminder_minutes:null
-  };
+  const ev={id:uid(),title:`🌙 ${title} (${start}-${end})`,date,time:start,category:'pessoal',type:'individual',location:null,notes:`Modo foco até ${end}`,recurrence:'none',is_focus:true,reminder_minutes:null};
   await saveEvent(ev);
   closeModal();
-  const[y,m,d]=date.split('-');
-  currentDate=new Date(+y,+m-1,1);selectedDate=new Date(+y,+m-1,+d);
+  const[y,m,d]=date.split('-');currentDate=new Date(+y,+m-1,1);selectedDate=new Date(+y,+m-1,+d);
   renderCalendar();renderSidebar();renderTodaySummary();
   showToast('Período bloqueado 🌙');
 }
@@ -574,7 +744,10 @@ function renderSidebar(){
       const meta=[];
       if(e.recurrence&&e.recurrence!=='none')meta.push('🔁');
       if(e.reminder_minutes)meta.push('🔔');
-      return `<div class="ev-card${e.is_focus?' focus-card':''}" style="border-left-color:${e.is_focus?'#9B6EE0':(COLORS[e.category]||COLORS.outro)}" onclick="openEventDetail('${e.id}')">
+      const evAtts=attendees[e.id]||[];
+      if(evAtts.length>0)meta.push(`👥${evAtts.length}`);
+      const isShared=e.owner_id!==currentUser.id;
+      return `<div class="ev-card${e.is_focus?' focus-card':''}${isShared?' shared':''}" style="border-left-color:${e.is_focus?'#9B6EE0':(COLORS[e.category]||COLORS.outro)}" onclick="openEventDetail('${e.id}')">
         ${meta.length?`<span class="ev-meta">${meta.join(' ')}</span>`:''}
         <div class="ev-time">${e.time||'—'}</div>
         <div class="ev-title">${e.title}</div>
@@ -612,16 +785,22 @@ function renderChat(){
 
 function getContext(){
   const today=new Date();
+  const topPatterns=patterns.filter(p=>p.confidence>=2).slice(0,15);
   return`Hoje é ${today.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.
 
-CONTATOS (use para identificar pessoas mencionadas):
+USUÁRIO: ${currentUser?.user_metadata?.full_name||currentUser?.email}
+
+CONTATOS:
 ${contacts.length?contacts.map(c=>`- ${c.name}${c.relation?' ('+c.relation+')':''}${c.notes?': '+c.notes:''}`).join('\n'):'Nenhum.'}
 
-AGENDA (próximos 30 itens):
-${displayEvents.slice(0,30).map(e=>`- ${e.title}: ${e.date} ${e.time?'às '+e.time:''}${e.location?' em '+e.location:''} (${LABELS[e.category]||e.category})${e.is_focus?' [FOCO/INDISPONÍVEL]':''}${e.recurrence&&e.recurrence!=='none'?' [recorrente: '+e.recurrence+']':''}${e.reminder_minutes?' [lembrete: '+e.reminder_minutes+'min antes]':''}`).join('\n')||'Nenhum evento.'}
+AGENDA (próximos 30):
+${displayEvents.slice(0,30).map(e=>`- ${e.title}: ${e.date} ${e.time?'às '+e.time:''}${e.location?' em '+e.location:''} (${LABELS[e.category]||e.category})${e.is_focus?' [FOCO]':''}${e.recurrence&&e.recurrence!=='none'?' [recorrente: '+e.recurrence+']':''}`).join('\n')||'Nenhum.'}
 
 INTENÇÕES:
-${intentions.map(i=>`- ${i.title} (${LABELS[i.category]||i.category})`).join('\n')||'Nenhuma.'}`;
+${intentions.map(i=>`- ${i.title} (${LABELS[i.category]||i.category})`).join('\n')||'Nenhuma.'}
+
+PADRÕES IDENTIFICADOS (use para sugerir horários, locais, durações):
+${topPatterns.length?topPatterns.map(p=>`- ${p.pattern_type}: para ${p.context}, valor=${p.value} (confiança: ${p.confidence})`).join('\n'):'Ainda aprendendo.'}`;
 }
 
 async function sendChat(){
@@ -630,20 +809,17 @@ async function sendChat(){
   await runChat(text);
 }
 
-async function askInChat(text){
-  switchView('chat');
-  await runChat(text);
-}
+async function askInChat(text){switchView('chat');await runChat(text);}
 
 async function runChat(text){
   chatHistory.push({role:'user',content:text});
   chatHistory.push({role:'assistant',content:'Pensando...',thinking:true});
   renderChat();
-  const sys=`Você é a Claudia, secretária pessoal inteligente, elegante e eficiente do André.
+  const sys=`Você é a Claudia, secretária pessoal inteligente do ${currentUser?.user_metadata?.full_name||'usuário'}.
 
 ${getContext()}
 
-Responda em português, natural e conciso. Quando o André pedir resumo da semana/dia/amanhã, organize por dia com horários. Quando mencionar pessoas, identifique-as nos contatos. Quando houver eventos de foco/indisponível, mencione-os explicitamente. Seja prática como uma secretária executiva de alto nível.`;
+Responda em português, natural e conciso. Use os padrões para enriquecer respostas. Se perguntarem sobre padrões, explique o que você aprendeu sobre a rotina.`;
   try{
     const msgs=chatHistory.filter(m=>!m.thinking).map(m=>({role:m.role,content:m.content}));
     const answer=await callAPI(msgs,sys,1500);
@@ -656,12 +832,11 @@ Responda em português, natural e conciso. Quando o André pedir resumo da seman
 
 async function requestSummary(scope){
   setStatus('Gerando resumo...','loading',true);
-  const today=new Date();
   let prompt='';
   if(scope==='today')prompt='Me dê um resumo organizado dos meus compromissos de hoje, com horários e detalhes importantes.';
   else if(scope==='tomorrow')prompt='Me dê um resumo dos meus compromissos de amanhã.';
   else if(scope==='week')prompt='Me dê um resumo da minha semana, organizado por dia com horários.';
-  const sys=`Você é a Claudia, secretária do André.\n\n${getContext()}\n\nResponda em português, organize por dia/horário, seja claro e útil.`;
+  const sys=`Você é a Claudia, secretária do usuário.\n\n${getContext()}\n\nResponda em português, organize por dia/horário, seja claro e útil.`;
   try{
     const answer=await callAPI([{role:'user',content:prompt}],sys,1200);
     pendingAI={type:'question',answer};
@@ -676,10 +851,8 @@ async function requestSummary(scope){
 // ── VOICE ──
 async function toggleMic(){
   if(isRecording){stopMic();return;}
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    stream.getTracks().forEach(t=>t.stop());
-  }catch(err){setStatus('Microfone bloqueado','error',false);return;}
+  try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});stream.getTracks().forEach(t=>t.stop());}
+  catch(err){setStatus('Microfone bloqueado','error',false);return;}
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){setStatus('Use o Chrome','error',false);return;}
   recognition=new SR();
@@ -727,7 +900,7 @@ function onFileAttached(e){
     prev.style.display='flex';
     prev.innerHTML=`${file.type.startsWith('image/')?`<img src="${ev.target.result}"/>`:'📄'} <span>${file.name}</span> <button class="remove-attach" onclick="clearAttachment()">×</button>`;
     document.getElementById('voice-send').style.display='block';
-    document.getElementById('voice-text').placeholder='Descreva ou pergunte sobre o anexo (opcional)';
+    document.getElementById('voice-text').placeholder='Descreva ou pergunte sobre o anexo';
   };
   reader.readAsDataURL(file);
 }
@@ -751,14 +924,7 @@ function submitVoice(){
 
 async function processWithImage(text,file){
   setStatus('Analisando convite...','loading',true);
-  const sys=`Você é uma secretária inteligente do André. Hoje é ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.
-
-Analise a IMAGEM ou DOCUMENTO anexado (convite, cartão, print) e extraia as informações.
-
-Responda SOMENTE com JSON:
-{"type":"event","title":"...","date":"YYYY-MM-DD","time":"HH:MM","category":"...","location":"...","notes":"detalhes como traje, RSVP, etc","eventType":"individual|conjunto","confidence":"alta|media|baixa","missingInfo":null,"recurrence":"none"}
-
-${getContext()}`;
+  const sys=`Você é a Claudia, secretária. Hoje é ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.\n\nAnalise a IMAGEM/DOCUMENTO e extraia evento.\n\nResponda SOMENTE com JSON:\n{"type":"event","title":"...","date":"YYYY-MM-DD","time":"HH:MM","category":"...","location":"...","notes":"detalhes","eventType":"individual|conjunto","confidence":"alta|media|baixa","missingInfo":null,"recurrence":"none"}\n\n${getContext()}`;
   try{
     const base64=file.data.split(',')[1];
     const content=[
@@ -781,25 +947,7 @@ ${getContext()}`;
 
 async function processInput(text){
   setStatus('Interpretando...','loading',true);
-  const sys=`Você é uma secretária inteligente do André. Hoje é ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.
-
-${getContext()}
-
-Responda SOMENTE com JSON válido.
-
-Tipos:
-1. Evento: {"type":"event","title":"...","date":"YYYY-MM-DD","time":"HH:MM","category":"trabalho|saude|lazer|familia|pessoal|outro","location":"...","notes":"...","eventType":"individual|conjunto","confidence":"alta|media|baixa","missingInfo":null,"recurrence":"none|daily|weekly|monthly|yearly","reminderMinutes":null|5|15|30|60|1440}
-2. Intenção: {"type":"intention","title":"...","category":"..."}
-3. Contato: {"type":"contact","name":"...","relation":"...","notes":"..."}
-4. Pergunta: {"type":"question","answer":"resposta natural"}
-5. Cancelamento: {"type":"action","action":"cancel","eventTitle":"...","answer":"..."}
-
-Regras:
-- Reconheça pessoas pelos contatos
-- Identifique recorrência ("todo X")
-- Se mencionar lembrete ("me lembra X antes"), preencha reminderMinutes
-- Conjunto: quando claramente envolve família/cônjuge
-- Se faltar info crítica → confidence:baixa + missingInfo`;
+  const sys=`Você é a Claudia, secretária. Hoje é ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.\n\n${getContext()}\n\nResponda SOMENTE com JSON.\n\nTipos:\n1. Evento: {"type":"event","title":"...","date":"YYYY-MM-DD","time":"HH:MM","category":"trabalho|saude|lazer|familia|pessoal|outro","location":"...","notes":"...","eventType":"individual|conjunto","confidence":"alta|media|baixa","missingInfo":null,"recurrence":"none|daily|weekly|monthly|yearly","reminderMinutes":null|5|15|30|60|1440}\n2. Intenção: {"type":"intention","title":"...","category":"..."}\n3. Contato: {"type":"contact","name":"...","relation":"...","notes":"..."}\n4. Pergunta: {"type":"question","answer":"resposta natural"}\n5. Cancelamento: {"type":"action","action":"cancel","eventTitle":"...","answer":"..."}\n\nUse padrões para sugerir horários/locais quando não especificados. Identifique pessoas pelos contatos.`;
   try{
     const raw=await callAPI([{role:'user',content:text}],sys,700);
     pendingAI={...JSON.parse(raw.replace(/```json|```/g,'').trim()),originalText:text};
@@ -814,6 +962,7 @@ Regras:
 // ── MODAL ──
 function showModal(){
   if(!pendingAI)return;
+  pendingAttendees=[];
   const{type}=pendingAI;let html='';
   if(type==='event'){
     const cc={alta:'var(--green)',media:'var(--yellow)',baixa:'var(--red)'}[pendingAI.confidence]||'var(--text3)';
@@ -828,9 +977,11 @@ function showModal(){
     ${mf('👥','Tipo',pendingAI.eventType==='conjunto'?'Conjunto':'Individual')}
     ${pendingAI.recurrence&&pendingAI.recurrence!=='none'?mf('🔁','Recorrência',{daily:'Diária',weekly:'Semanal',monthly:'Mensal',yearly:'Anual'}[pendingAI.recurrence]):''}
     ${pendingAI.notes?mf('📝','Observações',pendingAI.notes):''}
+    <div class="form-row"><label class="form-label">🔔 Lembrete</label><select class="form-select" id="reminder-select">${reminderOpts}</select></div>
     <div class="form-row">
-      <label class="form-label">🔔 Lembrete</label>
-      <select class="form-select" id="reminder-select">${reminderOpts}</select>
+      <label class="form-label">👥 Convidar pessoas (email)</label>
+      <div style="display:flex;gap:6px"><input class="form-input" id="attendee-email" type="email" placeholder="email@exemplo.com" style="flex:1"/><button class="quick-btn" onclick="addPendingAttendee()">+</button></div>
+      <div class="attendees-list" id="pending-attendees"></div>
     </div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button><button class="btn-primary" onclick="confirmEvent()">Confirmar</button></div>`;
   }else if(type==='intention'){
@@ -862,7 +1013,28 @@ function showModal(){
 }
 
 function mf(icon,label,val){if(!val)return'';return`<div class="mf"><div class="mf-icon">${icon}</div><div><div class="mf-lbl">${label}</div><div class="mf-val">${val}</div></div></div>`}
-function closeModal(){document.getElementById('modal-overlay').classList.remove('open');pendingAI=null;}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');pendingAI=null;pendingAttendees=[];}
+
+function addPendingAttendee(){
+  const inp=document.getElementById('attendee-email');
+  const email=inp.value.trim();
+  if(!email||!email.includes('@'))return;
+  if(pendingAttendees.includes(email))return;
+  pendingAttendees.push(email);
+  inp.value='';
+  renderPendingAttendees();
+}
+
+function removePendingAttendee(email){
+  pendingAttendees=pendingAttendees.filter(e=>e!==email);
+  renderPendingAttendees();
+}
+
+function renderPendingAttendees(){
+  const el=document.getElementById('pending-attendees');
+  if(!el)return;
+  el.innerHTML=pendingAttendees.map(e=>`<div class="attendee">${e}<button class="attendee-remove" onclick="removePendingAttendee('${e}')">×</button></div>`).join('');
+}
 
 async function confirmEvent(){
   if(!pendingAI||pendingAI.type!=='event')return;
@@ -871,7 +1043,12 @@ async function confirmEvent(){
   const reminderMinutes=rem&&rem.value?parseInt(rem.value):null;
   const ev={id:uid(),title:s.title||'Sem título',date:s.date||todayISO(),time:s.time||null,category:s.category||'outro',type:s.eventType||'individual',location:s.location||null,notes:s.notes||null,recurrence:s.recurrence||'none',reminder_minutes:reminderMinutes,is_focus:false};
   const saved=await saveEvent(ev);
-  if(saved&&s.date){const[y,m,d]=s.date.split('-');currentDate=new Date(+y,+m-1,1);selectedDate=new Date(+y,+m-1,+d);}
+  if(saved){
+    for(const email of pendingAttendees){
+      await addAttendee(saved.id,email);
+    }
+    if(s.date){const[y,m,d]=s.date.split('-');currentDate=new Date(+y,+m-1,1);selectedDate=new Date(+y,+m-1,+d);}
+  }
   closeModal();
   renderCalendar();renderSidebar();renderTodaySummary();
   switchView('calendar');
@@ -910,6 +1087,26 @@ function openEventDetail(id){
   const d=dateFromISO(e.date);
   const dateLabel=d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   const reminderLabel=e.reminder_minutes?REMINDER_OPTS.find(r=>r.value===String(e.reminder_minutes))?.label||`${e.reminder_minutes} min antes`:null;
+  const evAtts=attendees[e.id]||[];
+  const isOwner=e.owner_id===currentUser.id;
+  const myInvite=evAtts.find(a=>a.email===currentUser.email);
+
+  let attHtml='';
+  if(evAtts.length>0||isOwner){
+    attHtml=`<div class="form-row"><label class="form-label">👥 Convidados</label><div class="attendees-list">${evAtts.map(a=>`<div class="attendee">${a.email}<span class="attendee-status ${a.status}">${a.status==='accepted'?'Aceito':a.status==='declined'?'Recusou':'Pendente'}</span>${isOwner?`<button class="attendee-remove" onclick="removeAttendeeFromEvent('${a.id}','${e.id}')">×</button>`:''}</div>`).join('')||'<div style="font-size:12px;color:var(--text3)">Nenhum convidado</div>'}</div></div>`;
+  }
+
+  let myActions='';
+  if(myInvite&&!isOwner){
+    myActions=`<div style="margin-top:14px;padding:12px;background:var(--surface2);border-radius:var(--r-sm)">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Você foi convidado(a)</div>
+      <div style="display:flex;gap:8px">
+        <button class="quick-btn" onclick="respondInvite('${myInvite.id}','${e.id}','accepted')">✓ Aceitar</button>
+        <button class="quick-btn" onclick="respondInvite('${myInvite.id}','${e.id}','declined')">✕ Recusar</button>
+      </div>
+    </div>`;
+  }
+
   document.getElementById('modal-content').innerHTML=`
     <div class="modal-header"><div style="display:flex;align-items:center;gap:10px"><div style="width:10px;height:10px;border-radius:50%;background:${e.is_focus?'#9B6EE0':(COLORS[e.category]||COLORS.outro)};flex-shrink:0"></div><div class="modal-title" style="font-size:16px">${e.title}</div></div><button class="modal-close" onclick="closeModal()">×</button></div>
     ${mf('📅','Data',dateLabel)}
@@ -920,8 +1117,31 @@ function openEventDetail(id){
     ${e.recurrence&&e.recurrence!=='none'?mf('🔁','Recorrência',{daily:'Diária',weekly:'Semanal',monthly:'Mensal',yearly:'Anual'}[e.recurrence]):''}
     ${reminderLabel?mf('🔔','Lembrete',reminderLabel):''}
     ${e.notes?mf('📝','Notas',e.notes):''}
-    <div class="modal-actions"><button class="btn-danger" onclick="handleDeleteEvent('${e.id}')">Excluir</button><button class="btn-primary" onclick="closeModal()">Fechar</button></div>`;
+    ${attHtml}
+    ${myActions}
+    ${isOwner?`<div style="margin-top:14px"><label class="form-label">Adicionar convidado</label><div style="display:flex;gap:6px"><input class="form-input" id="new-attendee" type="email" placeholder="email@exemplo.com" style="flex:1"/><button class="quick-btn" onclick="quickAddAttendee('${e.id}')">+</button></div></div>`:''}
+    <div class="modal-actions">${isOwner?`<button class="btn-danger" onclick="handleDeleteEvent('${e.id}')">Excluir</button>`:''}<button class="btn-primary" onclick="closeModal()">Fechar</button></div>`;
   document.getElementById('modal-overlay').classList.add('open');
+}
+
+async function quickAddAttendee(eventId){
+  const inp=document.getElementById('new-attendee');
+  const email=inp.value.trim();
+  if(!email||!email.includes('@'))return;
+  await addAttendee(eventId,email);
+  showToast('Convidado adicionado');
+  openEventDetail(eventId);
+}
+
+async function removeAttendeeFromEvent(attId,eventId){
+  await removeAttendee(attId);
+  openEventDetail(eventId);
+}
+
+async function respondInvite(attId,eventId,status){
+  await updateAttendeeStatus(attId,status);
+  showToast(status==='accepted'?'Convite aceito ✓':'Convite recusado');
+  openEventDetail(eventId);
 }
 
 async function handleDeleteEvent(id){
@@ -932,24 +1152,50 @@ async function handleDeleteEvent(id){
 }
 
 // ── INIT ──
+async function initApp(){
+  await loadAll();
+  await refreshEvents();
+  chatHistory=[{role:'assistant',content:`Olá, ${currentUser?.user_metadata?.full_name?.split(' ')[0]||'André'}! Sou a Claudia. Posso criar compromissos por voz, texto ou imagem, gerenciar contatos, sincronizar com Google Calendar, e aprender sua rotina. Como posso ajudar?`}];
+
+  // Setup avatar
+  const avatar=document.getElementById('user-avatar');
+  avatar.src=currentUser?.user_metadata?.avatar_url||currentUser?.user_metadata?.picture||'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23C8A96E"/><text x="50" y="60" text-anchor="middle" font-size="40" fill="%231A1408">'+( (currentUser?.user_metadata?.full_name||currentUser?.email||'?')[0].toUpperCase() )+'</text></svg>';
+  document.getElementById('user-name').textContent=currentUser?.user_metadata?.full_name||'Usuário';
+  document.getElementById('user-email').textContent=currentUser?.email||'';
+
+  renderCalendar();renderSidebar();renderTodaySummary();renderChat();
+  if(localStorage.getItem('notifs')==='on'&&Notification.permission==='granted'){
+    notificationsEnabled=true;
+    document.getElementById('notif-btn').className='icon-btn active';
+  }
+  setInterval(checkReminders,30000);
+  checkReminders();
+}
+
 (async function init(){
   try{
-    await loadAll();
-    await refreshEvents();
-    renderCalendar();renderSidebar();renderTodaySummary();renderChat();
-    if(localStorage.getItem('notifs')==='on'&&Notification.permission==='granted'){
-      notificationsEnabled=true;
-      document.getElementById('notif-btn').className='icon-btn active';
+    const{data:{session}}=await sb.auth.getSession();
+    if(!session){
+      document.getElementById('loading-overlay').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+      return;
     }
-    // Check reminders every 30s
-    setInterval(checkReminders,30000);
-    checkReminders();
+    currentUser=session.user;
+    await initApp();
     document.getElementById('loading-overlay').classList.add('hidden');
   }catch(e){
     console.error(e);
-    document.getElementById('loading-overlay').innerHTML='<div style="color:var(--red);text-align:center"><div style="font-size:20px;margin-bottom:8px">Erro ao conectar</div><div style="font-size:13px;color:var(--text2)">'+e.message+'</div></div>';
+    document.getElementById('loading-overlay').innerHTML='<div style="color:var(--red);text-align:center"><div style="font-size:20px;margin-bottom:8px">Erro</div><div style="font-size:13px;color:var(--text2)">'+e.message+'</div></div>';
   }
 })();
+
+sb.auth.onAuthStateChange((event,session)=>{
+  if(event==='SIGNED_IN'&&!currentUser){
+    currentUser=session.user;
+    document.getElementById('login-screen').classList.add('hidden');
+    initApp();
+  }
+});
 </script>
 </body>
 </html>
