@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#0C0C0E;--surface:#131316;--surface2:#1A1A1F;--border:#242428;--border2:#2E2E35;
@@ -24,7 +25,7 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
 #logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;letter-spacing:-0.3px;}
 #logo span{color:var(--accent)}
 #nav{display:flex;gap:2px;background:var(--surface2);border-radius:12px;padding:3px;border:1px solid var(--border)}
-.nav-btn{padding:6px 18px;border-radius:9px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:all var(--transition);white-space:nowrap;}
+.nav-btn{padding:6px 14px;border-radius:9px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:all var(--transition);white-space:nowrap;}
 .nav-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.3)}
 .nav-btn:hover:not(.active){color:var(--text)}
 
@@ -32,13 +33,17 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
 .view{display:none;flex:1;flex-direction:column;overflow:hidden}
 .view.active{display:flex}
 
-/* CALENDAR */
 #cal-container{display:flex;flex:1;overflow:hidden}
 #cal-wrap{flex:1;overflow-y:auto;padding:24px;min-width:0}
-#cal-nav-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+#cal-nav-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 #cal-month-label{font-family:'Playfair Display',serif;font-size:20px;font-weight:500}
 .cal-arrow{width:34px;height:34px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all var(--transition);}
 .cal-arrow:hover{border-color:var(--accent);color:var(--accent)}
+
+#today-summary{background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(74,124,247,0.05));border:1px solid var(--border);border-radius:var(--r-md);padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.55;color:var(--text);display:none;}
+#today-summary.show{display:block;animation:fadeUp 0.4s ease}
+.summary-label{font-size:10px;color:var(--accent);font-weight:600;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px}
+
 #cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:8px}
 .cal-wd{text-align:center;font-size:11px;font-weight:600;color:var(--text3);padding:4px 0;letter-spacing:1px;text-transform:uppercase}
 #cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
@@ -50,40 +55,38 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
 .cal-cell.selected{background:var(--surface2);box-shadow:inset 0 0 0 1px var(--border2)}
 .cal-dn{text-align:center;font-size:13px;margin-bottom:6px;color:var(--text2)}
 .cal-dots{display:flex;flex-direction:column;gap:2px;padding:0 2px}
-.cal-dot{height:3px;border-radius:2px;opacity:0.8}
+.cal-dot{height:3px;border-radius:2px;opacity:0.85}
 .cal-more{font-size:9px;color:var(--text3);text-align:center;margin-top:2px}
 
-/* SIDEBAR */
 #sidebar{width:300px;border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
 #sidebar-header{padding:20px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
 #sidebar-date{font-family:'Playfair Display',serif;font-size:16px;font-weight:500;margin-bottom:2px}
 #sidebar-count{font-size:12px;color:var(--text2)}
 #sidebar-events{flex:1;overflow-y:auto;padding:12px}
-.ev-card{border-radius:var(--r-md);border:1px solid var(--border);background:var(--surface);padding:14px;margin-bottom:10px;cursor:pointer;transition:all var(--transition);border-left-width:3px;}
+.ev-card{border-radius:var(--r-md);border:1px solid var(--border);background:var(--surface);padding:14px;margin-bottom:10px;cursor:pointer;transition:all var(--transition);border-left-width:3px;position:relative;}
 .ev-card:hover{background:var(--surface2);transform:translateX(2px)}
 .ev-time{font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;letter-spacing:0.3px}
 .ev-title{font-size:14px;font-weight:500;margin-bottom:4px;color:var(--text)}
 .ev-loc{font-size:12px;color:var(--text3)}
 .ev-tag{display:inline-block;font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;padding:2px 8px;border-radius:5px;margin-top:6px;background:var(--surface2);}
+.ev-rec{position:absolute;top:10px;right:10px;font-size:10px;color:var(--text3)}
 
-/* INTENTIONS */
-#int-wrap{padding:28px;overflow-y:auto;flex:1}
-#int-header{margin-bottom:20px}
-#int-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-.int-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;transition:all var(--transition);position:relative;overflow:hidden;}
-.int-card:hover{background:var(--surface2);border-color:var(--border2)}
-.int-icon{font-size:24px;margin-bottom:10px}
-.int-title{font-size:14px;font-weight:500;margin-bottom:4px;color:var(--text)}
-.int-cat{font-size:11px;color:var(--text2)}
-.int-del{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;border:none;background:var(--surface2);color:var(--text3);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity var(--transition);}
-.int-card:hover .int-del{opacity:1}
+.list-wrap{padding:28px;overflow-y:auto;flex:1}
+.list-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:6px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;transition:all var(--transition);position:relative;overflow:hidden;}
+.card:hover{background:var(--surface2);border-color:var(--border2)}
+.card-strip{position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0}
+.card-icon{font-size:24px;margin-bottom:10px}
+.card-title{font-size:14px;font-weight:500;margin-bottom:4px;color:var(--text)}
+.card-sub{font-size:11px;color:var(--text2)}
+.card-del{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;border:none;background:var(--surface2);color:var(--text3);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity var(--transition);}
+.card:hover .card-del{opacity:1}
 
-/* CHAT */
 #chat-wrap{display:flex;flex-direction:column;height:100%}
 #chat-messages{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:14px;}
 .msg{max-width:72%;animation:fadeUp 0.25s ease}
 .msg.user{align-self:flex-end}.msg.assistant{align-self:flex-start}
-.msg-bubble{padding:13px 17px;font-size:14px;line-height:1.6;}
+.msg-bubble{padding:13px 17px;font-size:14px;line-height:1.6;white-space:pre-wrap;}
 .msg.user .msg-bubble{background:var(--accent);color:#1A1408;border-radius:18px 18px 4px 18px;font-weight:500;}
 .msg.assistant .msg-bubble{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:18px 18px 18px 4px;}
 .msg-thinking .msg-bubble{color:var(--text2);font-style:italic}
@@ -93,14 +96,13 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
 #chat-send{width:42px;height:42px;border-radius:50%;border:none;background:var(--accent);color:#1A1408;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all var(--transition);flex-shrink:0;}
 #chat-send:hover{background:var(--accent2)}
 
-/* VOICE BAR */
 #voice-bar{border-top:1px solid var(--border);padding:14px 24px;background:rgba(12,12,14,0.97);backdrop-filter:blur(20px);flex-shrink:0;}
 #status-row{min-height:22px;display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;}
 #status-text{color:var(--text2);transition:color var(--transition)}
 .spin{width:13px;height:13px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;display:none}
 #voice-input-row{display:flex;gap:10px;align-items:center}
-#mic-btn{width:50px;height:50px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;transition:all var(--transition);}
-#mic-btn:hover{border-color:var(--accent);color:var(--accent)}
+#mic-btn,#attach-btn{width:50px;height:50px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;transition:all var(--transition);}
+#mic-btn:hover,#attach-btn:hover{border-color:var(--accent);color:var(--accent)}
 #mic-btn.recording{background:var(--red);border-color:var(--red);color:#fff;animation:micPulse 1.5s ease infinite}
 .mic-ring{position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--red);animation:pulseRing 1.2s ease-out infinite;pointer-events:none;}
 #voice-text{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 18px;font-size:14px;color:var(--text);outline:none;transition:border-color var(--transition);}
@@ -108,11 +110,14 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
 #voice-text:focus{border-color:var(--border2)}
 #voice-send{padding:12px 20px;border-radius:var(--r-md);border:none;background:var(--accent);color:#1A1408;font-size:13px;font-weight:600;cursor:pointer;transition:all var(--transition);display:none;white-space:nowrap;}
 #voice-send:hover{background:var(--accent2)}
+#file-input{display:none}
+#attached-preview{display:none;margin-bottom:10px;padding:10px;background:var(--surface2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);align-items:center;gap:10px}
+#attached-preview img{max-height:60px;border-radius:4px}
+.remove-attach{margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px}
 
-/* MODAL */
 #modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
 #modal-overlay.open{display:flex}
-#modal-box{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-xl);padding:28px;width:100%;max-width:440px;max-height:88vh;overflow-y:auto;animation:modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);box-shadow:var(--shadow);}
+#modal-box{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-xl);padding:28px;width:100%;max-width:460px;max-height:88vh;overflow-y:auto;animation:modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);box-shadow:var(--shadow);}
 .modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px}
 .modal-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:500}
 .modal-close{width:30px;height:30px;border-radius:50%;border:none;background:var(--surface2);color:var(--text2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:12px;transition:all var(--transition);}
@@ -122,10 +127,10 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
 .mf-icon{font-size:16px;margin-top:1px;flex-shrink:0}
 .mf-lbl{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px}
 .mf-val{font-size:14px;color:var(--text)}
-.modal-warn{background:rgba(232,160,32,0.1);border:1px solid rgba(232,160,32,0.2);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:18px;font-size:13px;color:var(--yellow);display:flex;gap:8px;}
+.modal-warn{background:rgba(232,160,32,0.1);border:1px solid rgba(232,160,32,0.2);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:18px;font-size:13px;color:var(--yellow);}
 .modal-actions{display:flex;gap:10px;margin-top:24px}
 .btn-cancel{flex:1;padding:12px;border-radius:var(--r-md);border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:14px;transition:all var(--transition);}
-.btn-cancel:hover{color:var(--text);border-color:var(--border2)}
+.btn-cancel:hover{color:var(--text)}
 .btn-primary{flex:2;padding:12px;border-radius:var(--r-md);border:none;background:var(--accent);color:#1A1408;cursor:pointer;font-size:14px;font-weight:600;transition:all var(--transition);}
 .btn-primary:hover{background:var(--accent2)}
 .btn-full{width:100%;padding:13px;border-radius:var(--r-md);border:none;background:var(--accent);color:#1A1408;cursor:pointer;font-size:14px;font-weight:600;transition:all var(--transition);}
@@ -133,14 +138,16 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
 .btn-danger{flex:1;padding:12px;border-radius:var(--r-md);border:none;background:rgba(224,92,106,0.12);color:var(--red);cursor:pointer;font-size:13px;font-weight:600;transition:all var(--transition);}
 .btn-danger:hover{background:rgba(224,92,106,0.22)}
 
-/* MISC */
 .empty{padding:48px 24px;text-align:center;color:var(--text3)}
 .empty-icon{font-size:36px;margin-bottom:12px;opacity:0.4}
 .empty-text{font-size:14px;line-height:1.6}
 .ph{padding:28px 28px 0;flex-shrink:0}
 .ph-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:500;margin-bottom:4px}
 .ph-sub{font-size:13px;color:var(--text2)}
-.divider{height:1px;background:var(--border);margin:16px 0}
+
+#loading-overlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+#loading-overlay.hidden{display:none}
+.loader{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.9s linear infinite}
 
 @keyframes pulseRing{0%{transform:scale(1);opacity:0.8}100%{transform:scale(1.7);opacity:0}}
 @keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(224,92,106,0.4)}50%{box-shadow:0 0 0 8px rgba(224,92,106,0)}}
@@ -150,9 +157,9 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
 
 @media(max-width:768px){
   #sidebar{display:none}
-  #nav .nav-btn{padding:6px 12px;font-size:12px}
+  #nav .nav-btn{padding:6px 10px;font-size:11px}
   .ph{padding:20px 16px 0}
-  #int-wrap{padding:16px}
+  .list-wrap{padding:16px}
   #voice-bar{padding:12px 16px}
   #chat-messages{padding:16px}
   #cal-wrap{padding:16px}
@@ -161,18 +168,22 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
 </head>
 <body>
 
+<div id="loading-overlay">
+  <div class="loader"></div>
+  <div style="font-family:'Playfair Display',serif;font-size:22px;color:var(--accent)">claudia<span style="color:var(--text)">.</span></div>
+</div>
+
 <div id="header">
   <div id="logo">claudia<span>.</span></div>
   <div id="nav">
     <button class="nav-btn active" onclick="switchView('calendar')">Agenda</button>
     <button class="nav-btn" onclick="switchView('intentions')">Intenções</button>
+    <button class="nav-btn" onclick="switchView('contacts')">Contatos</button>
     <button class="nav-btn" onclick="switchView('chat')">Secretária</button>
   </div>
 </div>
 
 <div id="app">
-
-  <!-- CALENDAR -->
   <div id="view-calendar" class="view active">
     <div id="cal-container">
       <div id="cal-wrap">
@@ -181,6 +192,7 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
           <span id="cal-month-label"></span>
           <button class="cal-arrow" onclick="navMonth(1)">›</button>
         </div>
+        <div id="today-summary"></div>
         <div id="cal-weekdays">
           <div class="cal-wd">D</div><div class="cal-wd">S</div><div class="cal-wd">T</div>
           <div class="cal-wd">Q</div><div class="cal-wd">Q</div><div class="cal-wd">S</div><div class="cal-wd">S</div>
@@ -197,16 +209,16 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
     </div>
   </div>
 
-  <!-- INTENTIONS -->
   <div id="view-intentions" class="view" style="overflow-y:auto">
-    <div class="ph">
-      <div class="ph-title">Intenções</div>
-      <div class="ph-sub">Planos sem data definida — um dia você vai fazer</div>
-    </div>
-    <div id="int-wrap"><div id="int-grid"></div></div>
+    <div class="ph"><div class="ph-title">Intenções</div><div class="ph-sub">Planos sem data definida — um dia você vai fazer</div></div>
+    <div class="list-wrap"><div id="int-grid" class="list-grid"></div></div>
   </div>
 
-  <!-- CHAT -->
+  <div id="view-contacts" class="view" style="overflow-y:auto">
+    <div class="ph"><div class="ph-title">Contatos</div><div class="ph-sub">Pessoas importantes que a Claudia conhece</div></div>
+    <div class="list-wrap"><div id="contacts-grid" class="list-grid"></div></div>
+  </div>
+
   <div id="view-chat" class="view">
     <div id="chat-wrap">
       <div id="chat-messages"></div>
@@ -216,32 +228,33 @@ button,input,textarea{font-family:'Instrument Sans',sans-serif}
       </div>
     </div>
   </div>
-
 </div>
 
-<!-- VOICE BAR -->
 <div id="voice-bar">
   <div id="status-row">
     <div class="spin" id="spin-icon"></div>
     <span id="status-text"></span>
   </div>
+  <div id="attached-preview"></div>
   <div id="voice-input-row">
+    <button id="attach-btn" onclick="document.getElementById('file-input').click()" title="Anexar imagem">📎</button>
+    <input type="file" id="file-input" accept="image/*,application/pdf" onchange="onFileAttached(event)"/>
     <button id="mic-btn" onclick="toggleMic()">🎙️</button>
-    <input id="voice-text" placeholder='Fale ou escreva: "Dentista sexta às 9h"' oninput="onVoiceInput()" onkeydown="if(event.key==='Enter')submitVoice()"/>
+    <input id="voice-text" placeholder='Fale, escreva ou anexe um convite...' oninput="onVoiceInput()" onkeydown="if(event.key==='Enter')submitVoice()"/>
     <button id="voice-send" onclick="submitVoice()">Enviar</button>
   </div>
 </div>
 
-<!-- MODAL -->
 <div id="modal-overlay" onclick="closeModal()">
-  <div id="modal-box" onclick="event.stopPropagation()">
-    <div id="modal-content"></div>
-  </div>
+  <div id="modal-box" onclick="event.stopPropagation()"><div id="modal-content"></div></div>
 </div>
 
 <script>
+// ── SUPABASE ──
+const SUPABASE_URL = 'https://ffvhokahvmfhjioczdfc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ol0yfe-VfuxgkkVeXKRAkA_VF7ODO_a';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const API_KEY = '';
 const API_URL = '/api/claude';
 
 const COLORS={trabalho:'#4A7CF7',saude:'#3DBD8A',lazer:'#E8A020',familia:'#E05C6A',pessoal:'#9B6EE0',outro:'#8A8A94'};
@@ -250,19 +263,12 @@ const LABELS={trabalho:'Trabalho',saude:'Saúde',lazer:'Lazer',familia:'Família
 const MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const WDAYS=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
 
-let events=[
-  {id:uid(),title:'Reunião de planejamento',date:todayISO(),time:'09:00',category:'trabalho',location:'Sala de reuniões',notes:''},
-  {id:uid(),title:'Consulta médica',date:todayISO(),time:'14:30',category:'saude',location:'Clínica São Paulo',notes:''},
-];
-let intentions=[
-  {id:uid(),title:'Assistir filme no cinema',category:'lazer'},
-  {id:uid(),title:'Jantar no restaurante japonês',category:'lazer'},
-  {id:uid(),title:'Fazer trilha no parque',category:'pessoal'},
-];
-let chatHistory=[{role:'assistant',content:'Olá, André! Sou a Claudia, sua assistente pessoal. Pode me perguntar sobre sua agenda, criar compromissos por voz ou texto, ou gerenciar suas intenções.'}];
-let currentDate=new Date(),selectedDate=new Date(),recognition=null,isRecording=false,pendingAI=null;
+let events=[],intentions=[],contacts=[];
+let chatHistory=[{role:'assistant',content:'Olá, André! Sou a Claudia, sua assistente pessoal. Posso criar compromissos por voz, texto ou imagem de convites, responder sobre sua agenda e ajudar a gerenciar suas intenções e contatos.'}];
+let currentDate=new Date(),selectedDate=new Date();
+let recognition=null,isRecording=false,pendingAI=null,attachedFile=null;
 
-function uid(){return Math.random().toString(36).substr(2,9)}
+function uid(){return Math.random().toString(36).substr(2,9)+Date.now().toString(36)}
 function todayISO(){const d=new Date();return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
 function pad(n){return String(n).padStart(2,'0')}
 function sameDay(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate()}
@@ -270,37 +276,138 @@ function dateFromISO(s){const[y,m,d]=s.split('-');return new Date(+y,+m-1,+d)}
 
 function setStatus(msg,type,spin){
   const el=document.getElementById('status-text');
-  const sp=document.getElementById('spin-icon');
+  document.getElementById('spin-icon').style.display=spin?'block':'none';
   el.textContent=msg;
   el.style.color=type==='error'?'var(--red)':type==='success'?'var(--green)':type==='recording'?'var(--red)':type==='loading'?'var(--accent)':'var(--text2)';
-  sp.style.display=spin?'block':'none';
 }
 
-async function callAPI(messages, system, maxTokens=800){
+// ── DATA LAYER ──
+async function loadAll(){
+  const [e,i,c]=await Promise.all([
+    sb.from('events').select('*').order('date'),
+    sb.from('intentions').select('*').order('created_at',{ascending:false}),
+    sb.from('contacts').select('*').order('name'),
+  ]);
+  events=e.data||[];
+  intentions=i.data||[];
+  contacts=c.data||[];
+}
+
+async function expandRecurringEvents(){
+  // Expand recurring events into virtual instances for next 90 days
+  const today=new Date();today.setHours(0,0,0,0);
+  const end=new Date();end.setDate(end.getDate()+90);
+  const expanded=[];
+  for(const e of events){
+    if(!e.recurrence||e.recurrence==='none'){expanded.push(e);continue;}
+    const origDate=dateFromISO(e.date);
+    let cur=new Date(origDate);
+    let count=0;
+    while(cur<=end&&count<200){
+      if(cur>=today||sameDay(cur,origDate)){
+        expanded.push({...e,date:`${cur.getFullYear()}-${pad(cur.getMonth()+1)}-${pad(cur.getDate())}`,_recurring:cur.getTime()!==origDate.getTime()});
+      }
+      if(e.recurrence==='daily')cur.setDate(cur.getDate()+1);
+      else if(e.recurrence==='weekly')cur.setDate(cur.getDate()+7);
+      else if(e.recurrence==='monthly')cur.setMonth(cur.getMonth()+1);
+      else if(e.recurrence==='yearly')cur.setFullYear(cur.getFullYear()+1);
+      else break;
+      count++;
+    }
+  }
+  return expanded;
+}
+
+let displayEvents=[];
+async function refreshEvents(){displayEvents=await expandRecurringEvents();}
+
+async function saveEvent(ev){
+  const{data,error}=await sb.from('events').insert(ev).select();
+  if(error){console.error(error);alert('Erro ao salvar: '+error.message);return null;}
+  events.push(data[0]);
+  await refreshEvents();
+  return data[0];
+}
+
+async function deleteEventDB(id){
+  await sb.from('events').delete().eq('id',id);
+  events=events.filter(e=>e.id!==id);
+  await refreshEvents();
+}
+
+async function saveIntention(it){
+  const{data,error}=await sb.from('intentions').insert(it).select();
+  if(error){console.error(error);return null;}
+  intentions.unshift(data[0]);
+  return data[0];
+}
+
+async function deleteIntentionDB(id){
+  await sb.from('intentions').delete().eq('id',id);
+  intentions=intentions.filter(i=>i.id!==id);
+}
+
+async function saveContact(c){
+  const{data,error}=await sb.from('contacts').insert(c).select();
+  if(error){console.error(error);return null;}
+  contacts.push(data[0]);
+  contacts.sort((a,b)=>a.name.localeCompare(b.name));
+  return data[0];
+}
+
+async function deleteContactDB(id){
+  await sb.from('contacts').delete().eq('id',id);
+  contacts=contacts.filter(c=>c.id!==id);
+}
+
+// ── API ──
+async function callAPI(messages, system, maxTokens=900, useImage=false){
+  const body={model:'claude-sonnet-4-5',max_tokens:maxTokens,system,messages};
   const res=await fetch(API_URL,{
     method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key':API_KEY,
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true',
-    },
-    body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:maxTokens,system,messages})
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
   });
   const data=await res.json();
-  if(data.error)throw new Error(data.error.message);
+  if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
   return data.content?.map(b=>b.text||'').join('')||'';
 }
 
+// ── VIEWS ──
 function switchView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
   document.querySelector(`[onclick="switchView('${v}')"]`).classList.add('active');
   document.getElementById('voice-bar').style.display=v==='chat'?'none':'block';
-  if(v==='calendar'){renderCalendar();renderSidebar()}
+  if(v==='calendar'){renderCalendar();renderSidebar();renderTodaySummary();}
   if(v==='intentions')renderIntentions();
+  if(v==='contacts')renderContacts();
   if(v==='chat')renderChat();
+}
+
+async function renderTodaySummary(){
+  const today=new Date();
+  const todayStr=todayISO();
+  const todayEvs=displayEvents.filter(e=>e.date===todayStr).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const tomStr=`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate()+1)}`;
+  const tomEvs=displayEvents.filter(e=>e.date===tomStr);
+
+  const el=document.getElementById('today-summary');
+  if(todayEvs.length===0&&tomEvs.length===0){el.classList.remove('show');return;}
+
+  let text='';
+  if(todayEvs.length>0){
+    text+=`Hoje você tem ${todayEvs.length} compromisso${todayEvs.length>1?'s':''}: `;
+    text+=todayEvs.map(e=>`${e.title} às ${e.time||'—'}`).join(', ')+'.';
+  } else {
+    text+='Sua agenda de hoje está livre.';
+  }
+  if(tomEvs.length>0){
+    text+=` Amanhã: ${tomEvs.length} compromisso${tomEvs.length>1?'s':''}.`;
+  }
+  el.innerHTML=`<div class="summary-label">Resumo do dia</div>${text}`;
+  el.classList.add('show');
 }
 
 function renderCalendar(){
@@ -312,9 +419,9 @@ function renderCalendar(){
   for(let d=1;d<=days;d++){
     const date=new Date(y,m,d);
     const iso=`${y}-${pad(m+1)}-${pad(d)}`;
-    const dayEvs=events.filter(e=>e.date===iso);
+    const dayEvs=displayEvents.filter(e=>e.date===iso);
     const isTod=sameDay(date,today),isSel=sameDay(date,selectedDate);
-    const dots=dayEvs.slice(0,3).map(e=>`<div class="cal-dot" style="background:${COLORS[e.category]}"></div>`).join('');
+    const dots=dayEvs.slice(0,3).map(e=>`<div class="cal-dot" style="background:${COLORS[e.category]||COLORS.outro}"></div>`).join('');
     const more=dayEvs.length>3?`<div class="cal-more">+${dayEvs.length-3}</div>`:'';
     html+=`<div class="cal-cell${isTod?' today':''}${isSel?' selected':''}${dayEvs.length?' has-events':''}" onclick="selectDay(${y},${m},${d})"><div class="cal-dn">${d}</div><div class="cal-dots">${dots}${more}</div></div>`;
   }
@@ -325,14 +432,12 @@ function selectDay(y,m,d){selectedDate=new Date(y,m,d);renderCalendar();renderSi
 
 function renderSidebar(){
   const iso=`${selectedDate.getFullYear()}-${pad(selectedDate.getMonth()+1)}-${pad(selectedDate.getDate())}`;
-  const dayEvs=events.filter(e=>e.date===iso).sort((a,b)=>a.time.localeCompare(b.time));
-  const dateEl=document.getElementById('sidebar-date');
-  dateEl.textContent=`${selectedDate.getDate()} de ${MONTHS[selectedDate.getMonth()]}`;
-  dateEl.style.cssText='font-family:"Playfair Display",serif;font-size:16px;font-weight:500;margin-bottom:2px';
+  const dayEvs=displayEvents.filter(e=>e.date===iso).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  document.getElementById('sidebar-date').textContent=`${selectedDate.getDate()} de ${MONTHS[selectedDate.getMonth()]}`;
   document.getElementById('sidebar-count').textContent=dayEvs.length===0?'Nenhum compromisso':`${dayEvs.length} compromisso${dayEvs.length>1?'s':''}`;
   document.getElementById('sidebar-events').innerHTML=dayEvs.length===0
     ?`<div class="empty"><div class="empty-icon">🗓️</div><div class="empty-text">Nenhum compromisso<br>neste dia</div></div>`
-    :dayEvs.map(e=>`<div class="ev-card" style="border-left-color:${COLORS[e.category]}" onclick="openEventDetail('${e.id}')"><div class="ev-time">${e.time}</div><div class="ev-title">${e.title}</div>${e.location?`<div class="ev-loc">📍 ${e.location}</div>`:''}<span class="ev-tag" style="color:${COLORS[e.category]}">${LABELS[e.category]}</span></div>`).join('');
+    :dayEvs.map(e=>`<div class="ev-card" style="border-left-color:${COLORS[e.category]||COLORS.outro}" onclick="openEventDetail('${e.id}')">${e.recurrence&&e.recurrence!=='none'?'<span class="ev-rec">🔁</span>':''}<div class="ev-time">${e.time||'—'}</div><div class="ev-title">${e.title}</div>${e.location?`<div class="ev-loc">📍 ${e.location}</div>`:''}<span class="ev-tag" style="color:${COLORS[e.category]||COLORS.outro}">${LABELS[e.category]||e.category}</span></div>`).join('');
 }
 
 function navMonth(dir){currentDate=new Date(currentDate.getFullYear(),currentDate.getMonth()+dir,1);renderCalendar()}
@@ -340,15 +445,37 @@ function navMonth(dir){currentDate=new Date(currentDate.getFullYear(),currentDat
 function renderIntentions(){
   document.getElementById('int-grid').innerHTML=intentions.length===0
     ?`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">💡</div><div class="empty-text">Nenhuma intenção ainda<br>Diga: "Quero viajar para a praia"</div></div>`
-    :intentions.map(i=>`<div class="int-card"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:${COLORS[i.category]};border-radius:2px 2px 0 0"></div><div class="int-icon">${ICONS[i.category]||'📌'}</div><div class="int-title">${i.title}</div><div class="int-cat">${LABELS[i.category]}</div><button class="int-del" onclick="event.stopPropagation();deleteIntention('${i.id}')">×</button></div>`).join('');
+    :intentions.map(i=>`<div class="card"><div class="card-strip" style="background:${COLORS[i.category]||COLORS.outro}"></div><div class="card-icon">${ICONS[i.category]||'📌'}</div><div class="card-title">${i.title}</div><div class="card-sub">${LABELS[i.category]||i.category}</div><button class="card-del" onclick="event.stopPropagation();handleDeleteIntention('${i.id}')">×</button></div>`).join('');
 }
 
-function deleteIntention(id){intentions=intentions.filter(i=>i.id!==id);renderIntentions()}
+async function handleDeleteIntention(id){await deleteIntentionDB(id);renderIntentions()}
+
+function renderContacts(){
+  document.getElementById('contacts-grid').innerHTML=contacts.length===0
+    ?`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">👥</div><div class="empty-text">Nenhum contato ainda<br>Diga: "A minha esposa se chama Maria"</div></div>`
+    :contacts.map(c=>`<div class="card"><div class="card-strip" style="background:var(--accent)"></div><div class="card-icon">👤</div><div class="card-title">${c.name}</div><div class="card-sub">${c.relation||'Contato'}</div><button class="card-del" onclick="event.stopPropagation();handleDeleteContact('${c.id}')">×</button></div>`).join('');
+}
+
+async function handleDeleteContact(id){await deleteContactDB(id);renderContacts()}
 
 function renderChat(){
   const el=document.getElementById('chat-messages');
   el.innerHTML=chatHistory.map(m=>`<div class="msg ${m.role}${m.thinking?' msg-thinking':''}"><div class="msg-bubble">${m.content}</div></div>`).join('');
   el.scrollTop=el.scrollHeight;
+}
+
+function getContext(){
+  const today=new Date();
+  return`Hoje é ${today.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.
+
+CONTATOS conhecidos (use para identificar pessoas mencionadas):
+${contacts.length?contacts.map(c=>`- ${c.name}${c.relation?' ('+c.relation+')':''}${c.notes?': '+c.notes:''}`).join('\n'):'Nenhum contato cadastrado.'}
+
+AGENDA atual:
+${displayEvents.slice(0,30).map(e=>`- ${e.title}: ${e.date} ${e.time?'às '+e.time:''}${e.location?' em '+e.location:''} (${LABELS[e.category]||e.category})${e.recurrence&&e.recurrence!=='none'?' [recorrente: '+e.recurrence+']':''}`).join('\n')||'Nenhum evento.'}
+
+INTENÇÕES:
+${intentions.map(i=>`- ${i.title} (${LABELS[i.category]||i.category})`).join('\n')||'Nenhuma.'}`;
 }
 
 async function sendChat(){
@@ -357,43 +484,32 @@ async function sendChat(){
   chatHistory.push({role:'user',content:text});
   chatHistory.push({role:'assistant',content:'Pensando...',thinking:true});
   renderChat();
-  const today=new Date();
-  const sys=`Você é a Claudia, secretária pessoal inteligente e elegante do André. Hoje é ${today.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.
+  const sys=`Você é a Claudia, secretária pessoal inteligente, elegante e eficiente do André.
 
-Agenda de André:
-${events.length?events.map(e=>`- ${e.title}: ${e.date} às ${e.time}${e.location?' em '+e.location:''} (${LABELS[e.category]})`).join('\n'):'Nenhum evento agendado.'}
+${getContext()}
 
-Intenções:
-${intentions.length?intentions.map(i=>`- ${i.title} (${LABELS[i.category]})`).join('\n'):'Nenhuma.'}
-
-Responda em português, de forma natural, útil e concisa. Seja elegante como uma secretária executiva de alto nível.`;
+Responda em português de forma natural, útil e concisa. Quando o André mencionar pessoas, identifique-as nos contatos. Seja como uma secretária executiva de alto nível: prática, com memória e atenção aos detalhes.`;
   try{
     const msgs=chatHistory.filter(m=>!m.thinking).map(m=>({role:m.role,content:m.content}));
-    const answer=await callAPI(msgs,sys,1000);
+    const answer=await callAPI(msgs,sys,1200);
     chatHistory.pop();chatHistory.push({role:'assistant',content:answer});
   }catch(e){
-    chatHistory.pop();chatHistory.push({role:'assistant',content:'Erro de conexão: '+e.message});
+    chatHistory.pop();chatHistory.push({role:'assistant',content:'Erro: '+e.message});
   }
   renderChat();
 }
 
-// ── VOICE ────────────────────────────────────────────────
+// ── VOICE ──
 async function toggleMic(){
   if(isRecording){stopMic();return;}
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     stream.getTracks().forEach(t=>t.stop());
-  }catch(err){
-    setStatus('Microfone bloqueado: '+err.message,'error',false);
-    return;
-  }
+  }catch(err){setStatus('Microfone bloqueado','error',false);return;}
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){setStatus('Use o Chrome para reconhecimento de voz','error',false);return;}
+  if(!SR){setStatus('Use o Chrome','error',false);return;}
   recognition=new SR();
-  recognition.lang='pt-BR';
-  recognition.continuous=false;
-  recognition.interimResults=true;
-  recognition.maxAlternatives=1;
+  recognition.lang='pt-BR';recognition.continuous=false;recognition.interimResults=true;
   let finalText='';
   recognition.onstart=()=>setStatus('🔴 Ouvindo... fale agora','recording',false);
   recognition.onresult=e=>{
@@ -408,11 +524,10 @@ async function toggleMic(){
   recognition.onerror=e=>{setStatus('Erro: '+e.error,'error',false);setRecording(false);};
   recognition.onend=()=>{
     setRecording(false);
-    if(finalText.trim()){processInput(finalText.trim());}
-    else{setStatus('Nada captado. Tente novamente.','error',false);setTimeout(()=>setStatus('','',false),3000);}
+    if(finalText.trim())processInput(finalText.trim());
+    else{setStatus('Nada captado','error',false);setTimeout(()=>setStatus('','',false),3000);}
   };
-  try{recognition.start();setRecording(true);}
-  catch(e){setStatus('Erro: '+e.message,'error',false);}
+  try{recognition.start();setRecording(true);}catch(e){setStatus('Erro: '+e.message,'error',false);}
 }
 
 function stopMic(){if(recognition){try{recognition.stop();}catch(e){}}setRecording(false);}
@@ -420,43 +535,102 @@ function stopMic(){if(recognition){try{recognition.stop();}catch(e){}}setRecordi
 function setRecording(v){
   isRecording=v;
   const btn=document.getElementById('mic-btn');
-  btn.className=v?'recording':'';
-  btn.textContent=v?'⏹':'🎙️';
+  btn.className=v?'recording':'';btn.textContent=v?'⏹':'🎙️';
   if(v){const r=document.createElement('div');r.className='mic-ring';btn.appendChild(r);}
   else btn.querySelectorAll('.mic-ring').forEach(r=>r.remove());
 }
 
 function onVoiceInput(){
-  document.getElementById('voice-send').style.display=document.getElementById('voice-text').value?'block':'none';
+  document.getElementById('voice-send').style.display=document.getElementById('voice-text').value||attachedFile?'block':'none';
 }
+
+function onFileAttached(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    attachedFile={name:file.name,type:file.type,data:ev.target.result};
+    const prev=document.getElementById('attached-preview');
+    prev.style.display='flex';
+    prev.innerHTML=`${file.type.startsWith('image/')?`<img src="${ev.target.result}"/>`:'📄'} <span>${file.name}</span> <button class="remove-attach" onclick="clearAttachment()">×</button>`;
+    document.getElementById('voice-send').style.display='block';
+    document.getElementById('voice-text').placeholder='Descreva ou pergunte sobre o anexo (opcional)';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearAttachment(){
+  attachedFile=null;
+  document.getElementById('attached-preview').style.display='none';
+  document.getElementById('file-input').value='';
+  document.getElementById('voice-text').placeholder='Fale, escreva ou anexe um convite...';
+  onVoiceInput();
+}
+
 function submitVoice(){
   const v=document.getElementById('voice-text').value.trim();
-  if(!v)return;
+  if(!v&&!attachedFile)return;
   document.getElementById('voice-text').value='';
   document.getElementById('voice-send').style.display='none';
-  processInput(v);
+  if(attachedFile)processWithImage(v||'Interprete este convite e crie um evento',attachedFile);
+  else processInput(v);
+}
+
+async function processWithImage(text,file){
+  setStatus('Analisando convite...','loading',true);
+  const sys=`Você é uma secretária inteligente do André. Hoje é ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.
+
+Analise a IMAGEM ou DOCUMENTO anexado (convite, cartão, print) e extraia as informações do evento.
+
+Responda SOMENTE com JSON válido:
+{"type":"event","title":"...","date":"YYYY-MM-DD","time":"HH:MM","category":"trabalho|saude|lazer|familia|pessoal|outro","location":"...","notes":"detalhes adicionais como traje, RSVP, etc","eventType":"individual|conjunto","confidence":"alta|media|baixa","missingInfo":null,"recurrence":"none"}
+
+${getContext()}`;
+  try{
+    const base64=file.data.split(',')[1];
+    const content=[
+      {type:'image',source:{type:'base64',media_type:file.type,data:base64}},
+      {type:'text',text:text}
+    ];
+    const res=await fetch(API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:800,system:sys,messages:[{role:'user',content}]})
+    });
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message);
+    const raw=data.content?.map(b=>b.text||'').join('')||'{}';
+    pendingAI={...JSON.parse(raw.replace(/```json|```/g,'').trim()),originalText:text,attachedFileData:file.data,attachedFileName:file.name};
+    clearAttachment();
+    setStatus('','',false);
+    showModal();
+  }catch(e){
+    setStatus('Erro: '+e.message,'error',false);
+    setTimeout(()=>setStatus('','',false),4000);
+  }
 }
 
 async function processInput(text){
   setStatus('Interpretando...','loading',true);
-  const today=new Date();
-  const sys=`Você é uma secretária inteligente do André. Hoje é ${today.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.
-Responda SOMENTE com JSON válido, sem markdown, sem texto extra.
+  const sys=`Você é uma secretária inteligente do André. Hoje é ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.
 
-Tipos de resposta:
-1. Evento com data: {"type":"event","title":"...","date":"YYYY-MM-DD","time":"HH:MM","category":"trabalho|saude|lazer|familia|pessoal|outro","location":"...","notes":"...","eventType":"individual|conjunto","confidence":"alta|media|baixa","missingInfo":null}
-2. Intenção sem data definida: {"type":"intention","title":"...","category":"trabalho|saude|lazer|familia|pessoal|outro"}
-3. Pergunta ou consulta de agenda: {"type":"question","answer":"...resposta em português natural..."}
+${getContext()}
+
+Responda SOMENTE com JSON válido, sem markdown.
+
+Tipos:
+1. Evento: {"type":"event","title":"...","date":"YYYY-MM-DD","time":"HH:MM","category":"trabalho|saude|lazer|familia|pessoal|outro","location":"...","notes":"...","eventType":"individual|conjunto","confidence":"alta|media|baixa","missingInfo":null,"recurrence":"none|daily|weekly|monthly|yearly"}
+2. Intenção (sem data): {"type":"intention","title":"...","category":"..."}
+3. Contato novo (ex: "minha esposa é Maria", "meu chefe João"): {"type":"contact","name":"...","relation":"esposa|chefe|amigo|filho|mãe|pai|etc","notes":"..."}
+4. Pergunta/consulta: {"type":"question","answer":"resposta natural em português"}
+5. Cancelamento: {"type":"action","action":"cancel","eventTitle":"...","answer":"..."}
 
 Regras:
-- Se faltar data ou hora clara: confidence "baixa" e preencha missingInfo explicando o que falta
-- Se data for ambígua (ex: "terça" sem especificar qual): confidence "media"  
-- Se tudo estiver claro: confidence "alta"
-- Infira a categoria pelo contexto da mensagem
-- Para perguntas sobre agenda, consulte os eventos abaixo e responda naturalmente`;
-  const ctx=`\n\nAgenda atual:\n${events.map(e=>`- ${e.title}: ${e.date} às ${e.time}${e.location?' em '+e.location:''}`).join('\n')}\n\nIntenções:\n${intentions.map(i=>`- ${i.title}`).join('\n')}`;
+- Reconheça pessoas pelo contexto dos contatos (ex: "reunião com Gustavo" → use o contato Gustavo)
+- Identifique recorrência ("todo dia", "toda semana", "todo mês") e marque em recurrence
+- confidence: alta se claro, media se ambíguo, baixa se faltar info crítica
+- Para eventos conjuntos (com família/cônjuge), use eventType:"conjunto"`;
   try{
-    const raw=await callAPI([{role:'user',content:text+ctx}],sys,600);
+    const raw=await callAPI([{role:'user',content:text}],sys,700);
     pendingAI={...JSON.parse(raw.replace(/```json|```/g,'').trim()),originalText:text};
     setStatus('','',false);
     showModal();
@@ -466,111 +640,127 @@ Regras:
   }
 }
 
-// ── MODAL ────────────────────────────────────────────────
+// ── MODAL ──
 function showModal(){
   if(!pendingAI)return;
   const{type}=pendingAI;let html='';
   if(type==='event'){
     const cc={alta:'var(--green)',media:'var(--yellow)',baixa:'var(--red)'}[pendingAI.confidence]||'var(--text3)';
-    html=`<div class="modal-header">
-      <div><div class="modal-title">Novo Evento</div><span class="conf-badge" style="color:${cc};border-color:${cc}">${(pendingAI.confidence||'').toUpperCase()}</span></div>
-      <button class="modal-close" onclick="closeModal()">×</button>
-    </div>
+    html=`<div class="modal-header"><div><div class="modal-title">Novo Evento</div><span class="conf-badge" style="color:${cc};border-color:${cc}">${(pendingAI.confidence||'').toUpperCase()}</span></div><button class="modal-close" onclick="closeModal()">×</button></div>
     ${pendingAI.missingInfo?`<div class="modal-warn">⚠️ ${pendingAI.missingInfo}</div>`:''}
     ${mf('📌','Título',pendingAI.title)}
     ${mf('📅','Data',pendingAI.date)}
     ${mf('🕐','Horário',pendingAI.time)}
     ${pendingAI.location?mf('📍','Local',pendingAI.location):''}
     ${mf('🏷️','Categoria',LABELS[pendingAI.category]||pendingAI.category)}
-    ${mf('👥','Tipo',pendingAI.eventType==='conjunto'?'Evento conjunto':'Individual')}
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" onclick="confirmEvent()">Confirmar evento</button>
-    </div>`;
+    ${mf('👥','Tipo',pendingAI.eventType==='conjunto'?'Conjunto':'Individual')}
+    ${pendingAI.recurrence&&pendingAI.recurrence!=='none'?mf('🔁','Recorrência',{daily:'Diária',weekly:'Semanal',monthly:'Mensal',yearly:'Anual'}[pendingAI.recurrence]):''}
+    ${pendingAI.notes?mf('📝','Observações',pendingAI.notes):''}
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button><button class="btn-primary" onclick="confirmEvent()">Confirmar</button></div>`;
   }else if(type==='intention'){
-    html=`<div class="modal-header">
-      <div class="modal-title">💡 Nova Intenção</div>
-      <button class="modal-close" onclick="closeModal()">×</button>
-    </div>
-    <div style="font-size:15px;font-weight:500;margin-bottom:6px;color:var(--text)">${pendingAI.title}</div>
+    html=`<div class="modal-header"><div class="modal-title">💡 Nova Intenção</div><button class="modal-close" onclick="closeModal()">×</button></div>
+    <div style="font-size:15px;font-weight:500;margin-bottom:6px">${pendingAI.title}</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:24px">${ICONS[pendingAI.category]||''} ${LABELS[pendingAI.category]||''}</div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" onclick="confirmIntention()">Salvar intenção</button>
-    </div>`;
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button><button class="btn-primary" onclick="confirmIntention()">Salvar</button></div>`;
+  }else if(type==='contact'){
+    html=`<div class="modal-header"><div class="modal-title">👤 Novo Contato</div><button class="modal-close" onclick="closeModal()">×</button></div>
+    ${mf('Nome','',pendingAI.name)}
+    ${pendingAI.relation?mf('Relação','',pendingAI.relation):''}
+    ${pendingAI.notes?mf('Notas','',pendingAI.notes):''}
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button><button class="btn-primary" onclick="confirmContact()">Salvar contato</button></div>`;
   }else if(type==='question'){
-    html=`<div class="modal-header">
-      <div class="modal-title">Claudia</div>
-      <button class="modal-close" onclick="closeModal()">×</button>
-    </div>
-    <div style="font-size:14px;line-height:1.7;color:var(--text);margin-bottom:24px">${pendingAI.answer}</div>
+    html=`<div class="modal-header"><div class="modal-title">Claudia</div><button class="modal-close" onclick="closeModal()">×</button></div>
+    <div style="font-size:14px;line-height:1.7;color:var(--text);margin-bottom:24px;white-space:pre-wrap">${pendingAI.answer}</div>
     <button class="btn-full" onclick="closeModal()">Fechar</button>`;
+  }else if(type==='action'){
+    html=`<div class="modal-header"><div class="modal-title">Confirmar ação</div><button class="modal-close" onclick="closeModal()">×</button></div>
+    <div style="font-size:14px;line-height:1.7;margin-bottom:24px">${pendingAI.answer}</div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Não</button><button class="btn-primary" onclick="confirmAction()">Sim</button></div>`;
   }else{
-    html=`<div class="modal-header">
-      <div class="modal-title">Atenção</div>
-      <button class="modal-close" onclick="closeModal()">×</button>
-    </div>
-    <div style="font-size:14px;color:var(--red);margin-bottom:20px">${pendingAI.answer||'Erro ao interpretar.'}</div>
+    html=`<div class="modal-header"><div class="modal-title">Atenção</div><button class="modal-close" onclick="closeModal()">×</button></div>
+    <div style="font-size:14px;color:var(--red);margin-bottom:20px">${pendingAI.answer||'Não consegui interpretar.'}</div>
     <button class="btn-full" onclick="closeModal()">Fechar</button>`;
   }
   document.getElementById('modal-content').innerHTML=html;
   document.getElementById('modal-overlay').classList.add('open');
 }
 
-function mf(icon,label,val){
-  if(!val)return'';
-  return`<div class="mf"><div class="mf-icon">${icon}</div><div><div class="mf-lbl">${label}</div><div class="mf-val">${val}</div></div></div>`;
-}
-
+function mf(icon,label,val){if(!val)return'';return`<div class="mf"><div class="mf-icon">${icon}</div><div><div class="mf-lbl">${label}</div><div class="mf-val">${val}</div></div></div>`}
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open');pendingAI=null;}
 
-function confirmEvent(){
+async function confirmEvent(){
   if(!pendingAI||pendingAI.type!=='event')return;
-  const saved=pendingAI;
-  const ev={id:uid(),title:saved.title||'Sem título',date:saved.date||todayISO(),time:saved.time||'00:00',category:saved.category||'outro',location:saved.location||'',notes:saved.notes||''};
-  events.push(ev);closeModal();
-  if(saved.date){const[y,m,d]=saved.date.split('-');currentDate=new Date(+y,+m-1,1);selectedDate=new Date(+y,+m-1,+d);}
-  renderCalendar();renderSidebar();
+  const s=pendingAI;
+  const ev={id:uid(),title:s.title||'Sem título',date:s.date||todayISO(),time:s.time||null,category:s.category||'outro',type:s.eventType||'individual',location:s.location||null,notes:s.notes||null,recurrence:s.recurrence||'none'};
+  const saved=await saveEvent(ev);
+  if(saved&&s.date){const[y,m,d]=s.date.split('-');currentDate=new Date(+y,+m-1,1);selectedDate=new Date(+y,+m-1,+d);}
+  closeModal();
+  renderCalendar();renderSidebar();renderTodaySummary();
   switchView('calendar');
 }
 
-function confirmIntention(){
+async function confirmIntention(){
   if(!pendingAI||pendingAI.type!=='intention')return;
-  intentions.push({id:uid(),title:pendingAI.title,category:pendingAI.category||'outro'});
+  await saveIntention({id:uid(),title:pendingAI.title,category:pendingAI.category||'outro',notes:pendingAI.notes||null});
   closeModal();
   if(document.getElementById('view-intentions').classList.contains('active'))renderIntentions();
 }
 
+async function confirmContact(){
+  if(!pendingAI||pendingAI.type!=='contact')return;
+  await saveContact({id:uid(),name:pendingAI.name,relation:pendingAI.relation||null,notes:pendingAI.notes||null});
+  closeModal();
+  if(document.getElementById('view-contacts').classList.contains('active'))renderContacts();
+}
+
+async function confirmAction(){
+  if(!pendingAI||pendingAI.type!=='action')return;
+  if(pendingAI.action==='cancel'&&pendingAI.eventTitle){
+    const match=events.find(e=>e.title.toLowerCase().includes(pendingAI.eventTitle.toLowerCase()));
+    if(match)await deleteEventDB(match.id);
+  }
+  closeModal();
+  renderCalendar();renderSidebar();
+}
+
 function openEventDetail(id){
-  const e=events.find(ev=>ev.id===id);if(!e)return;
+  const e=displayEvents.find(ev=>ev.id===id);if(!e)return;
   const d=dateFromISO(e.date);
   const dateLabel=d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   document.getElementById('modal-content').innerHTML=`
-    <div class="modal-header">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:10px;height:10px;border-radius:50%;background:${COLORS[e.category]};flex-shrink:0"></div>
-        <div class="modal-title" style="font-size:16px">${e.title}</div>
-      </div>
-      <button class="modal-close" onclick="closeModal()">×</button>
-    </div>
+    <div class="modal-header"><div style="display:flex;align-items:center;gap:10px"><div style="width:10px;height:10px;border-radius:50%;background:${COLORS[e.category]||COLORS.outro};flex-shrink:0"></div><div class="modal-title" style="font-size:16px">${e.title}</div></div><button class="modal-close" onclick="closeModal()">×</button></div>
     ${mf('📅','Data',dateLabel)}
-    ${mf('🕐','Horário',e.time)}
+    ${e.time?mf('🕐','Horário',e.time):''}
     ${e.location?mf('📍','Local',e.location):''}
-    ${mf('🏷️','Categoria',LABELS[e.category])}
+    ${mf('🏷️','Categoria',LABELS[e.category]||e.category)}
+    ${e.type==='conjunto'?mf('👥','Tipo','Evento conjunto'):''}
+    ${e.recurrence&&e.recurrence!=='none'?mf('🔁','Recorrência',{daily:'Diária',weekly:'Semanal',monthly:'Mensal',yearly:'Anual'}[e.recurrence]):''}
     ${e.notes?mf('📝','Notas',e.notes):''}
-    <div class="modal-actions">
-      <button class="btn-danger" onclick="deleteEvent('${e.id}')">Excluir</button>
-      <button class="btn-primary" onclick="closeModal()">Fechar</button>
-    </div>`;
+    <div class="modal-actions"><button class="btn-danger" onclick="handleDeleteEvent('${e.id}')">Excluir</button><button class="btn-primary" onclick="closeModal()">Fechar</button></div>`;
   document.getElementById('modal-overlay').classList.add('open');
 }
 
-function deleteEvent(id){events=events.filter(e=>e.id!==id);closeModal();renderCalendar();renderSidebar();}
+async function handleDeleteEvent(id){
+  await deleteEventDB(id);
+  closeModal();
+  renderCalendar();renderSidebar();renderTodaySummary();
+}
 
-// INIT
-renderCalendar();
-renderSidebar();
-renderChat();
+// ── INIT ──
+(async function init(){
+  try{
+    await loadAll();
+    await refreshEvents();
+    renderCalendar();
+    renderSidebar();
+    renderTodaySummary();
+    renderChat();
+    document.getElementById('loading-overlay').classList.add('hidden');
+  }catch(e){
+    console.error(e);
+    document.getElementById('loading-overlay').innerHTML='<div style="color:var(--red);text-align:center"><div style="font-size:20px;margin-bottom:8px">Erro ao conectar</div><div style="font-size:13px;color:var(--text2)">'+e.message+'</div></div>';
+  }
+})();
 </script>
 </body>
 </html>
