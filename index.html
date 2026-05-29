@@ -285,7 +285,7 @@ async function callAPI(messages, system, maxTokens=800){
       'anthropic-version':'2023-06-01',
       'anthropic-dangerous-direct-browser-access':'true',
     },
-    body:JSON.stringify({model:'laude-sonnet-4-5',max_tokens:maxTokens,system,messages})
+    body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:maxTokens,system,messages})
   });
   const data=await res.json();
   if(data.error)throw new Error(data.error.message);
