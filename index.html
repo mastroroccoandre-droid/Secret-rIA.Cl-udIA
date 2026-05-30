@@ -566,6 +566,11 @@ async function deleteEventDB(id){
   await sb.from('events').delete().eq('id',id);
   events=events.filter(e=>e.id!==id);await refreshEvents();
 }
+async function updateEventCategory(id,category){
+  await sb.from('events').update({category}).eq('id',id);
+  const ev=events.find(e=>e.id===id);
+  if(ev)ev.category=category;
+}
 async function saveIntention(it){
   it.owner_id=currentUser.id;
   const{data,error}=await sb.from('intentions').insert(it).select();
@@ -983,26 +988,34 @@ function splitByCategory(evs){
   return {resolved,needsAI};
 }
 
-async function classifyWithAI(evs){
-  // Classifica em lote os eventos sem categoria clara. Uma única chamada.
+async function classifyWithAI(evs,onProgress){
+  // Classifica em LOTES e SALVA a categoria de volta no evento.
   if(evs.length===0)return {};
-  const list=evs.map((e,i)=>`${i}: "${e.title}"${e.location?' ('+e.location+')':''}`).join('\n');
-  const sys=`Você é a Claudia, secretária. Classifique cada item em UMA categoria entre: trabalho, saude, lazer, familia, pessoal, outro.
+  const out={};
+  const BATCH=25;
+  for(let start=0;start<evs.length;start+=BATCH){
+    const lote=evs.slice(start,start+BATCH);
+    const list=lote.map((e,i)=>`${i}: "${e.title}"${e.location?' ('+e.location+')':''}`).join('\n');
+    const sys=`Você é a Claudia, secretária. Classifique cada item em UMA categoria entre: trabalho, saude, lazer, familia, pessoal, outro.
 Use bom senso pelo título/local. Responda SOMENTE com JSON no formato {"0":"categoria","1":"categoria",...} sem texto extra.`;
-  try{
-    const raw=await callAPI([{role:'user',content:list}],sys,500);
-    const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
-    const out={};
-    evs.forEach((e,i)=>{
-      const cat=CAT_KEYS.includes(parsed[i])?parsed[i]:'outro';
-      out[e.id]=cat;
-      aiCatCache[normalizeTitle(e.title)]=cat; // cacheia
-    });
-    return out;
-  }catch(err){
-    // Falhou: cai pra "outro" sem quebrar
-    const out={};evs.forEach(e=>out[e.id]='outro');return out;
+    try{
+      const raw=await callAPI([{role:'user',content:list}],sys,1500);
+      const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+      for(let i=0;i<lote.length;i++){
+        const e=lote[i];
+        const cat=CAT_KEYS.includes(parsed[i])?parsed[i]:'outro';
+        out[e.id]=cat;
+        aiCatCache[normalizeTitle(e.title)]=cat;
+        // salva de volta no banco só se mudou de "outro" pra algo útil
+        if(cat!=='outro'&&e.category!==cat){await updateEventCategory(e.id,cat);}
+      }
+    }catch(err){
+      for(const e of lote)out[e.id]=e.category||'outro';
+    }
+    if(onProgress)onProgress(Math.min(start+BATCH,evs.length),evs.length);
   }
+  await refreshEvents(); // reflete as novas categorias no calendário
+  return out;
 }
 
 async function renderInsights(){
@@ -1015,8 +1028,12 @@ async function renderInsights(){
   const {resolved,needsAI}=splitByCategory(evs);
   // Desenha já o que dá, com aviso de que a IA está organizando o resto
   if(needsAI.length>0){
-    el.innerHTML=`<div class="insights-loading"><div class="spin"></div>A Claudia está organizando ${needsAI.length} compromisso${needsAI.length>1?'s':''} por categoria...</div>`;
-    const aiResults=await classifyWithAI(needsAI);
+    const loadEl=()=>document.getElementById('insights-content');
+    loadEl().innerHTML=`<div class="insights-loading"><div class="spin"></div><span id="ins-progress">A Claudia está organizando ${needsAI.length} compromisso${needsAI.length>1?'s':''} por categoria...</span></div>`;
+    const aiResults=await classifyWithAI(needsAI,(done,tot)=>{
+      const p=document.getElementById('ins-progress');
+      if(p)p.textContent=`A Claudia está organizando... ${done}/${tot}`;
+    });
     Object.assign(resolved,aiResults);
   }
   drawInsights(evs,resolved);
