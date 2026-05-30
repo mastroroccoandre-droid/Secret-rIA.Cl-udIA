@@ -131,6 +131,14 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
 #chat-input:focus{border-color:var(--accent)}
 #chat-send{width:42px;height:42px;border-radius:50%;border:none;background:var(--accent);color:#1A1408;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all var(--transition);flex-shrink:0;}
 #chat-send:hover{background:var(--accent2)}
+#chat-voice-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all var(--transition);flex-shrink:0;position:relative;}
+#chat-voice-btn:hover{border-color:var(--accent);color:var(--accent)}
+#chat-voice-btn.active{background:var(--red);border-color:var(--red);color:#fff;animation:micPulse 1.5s ease infinite}
+#chat-voice-btn.speaking{background:var(--accent);border-color:var(--accent);color:#1A1408;animation:micPulse 1.5s ease infinite}
+#voice-conv-status{padding:0 24px;font-size:12px;color:var(--text2);min-height:0;transition:all var(--transition);text-align:center}
+#voice-conv-status.show{padding:6px 24px 10px}
+.conv-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:7px;animation:micPulse 1.2s ease infinite;vertical-align:middle}
+.conv-dot.speaking{background:var(--accent)}
 
 #voice-bar{border-top:1px solid var(--border);padding:14px 24px;background:rgba(12,12,14,0.97);backdrop-filter:blur(20px);flex-shrink:0;}
 #status-row{min-height:22px;display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;}
@@ -316,7 +324,9 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
         <button class="quick-btn" onclick="askInChat('Quais padrões você identificou na minha rotina?')">Meus padrões</button>
       </div>
       <div id="chat-messages"></div>
+      <div id="voice-conv-status"></div>
       <div id="chat-input-row">
+        <button id="chat-voice-btn" onclick="toggleConversation()" title="Conversar por voz">🎙️</button>
         <input id="chat-input" placeholder="Pergunte sobre sua agenda..." onkeydown="if(event.key==='Enter')sendChat()"/>
         <button id="chat-send" onclick="sendChat()">↑</button>
       </div>
@@ -693,6 +703,7 @@ function switchView(v){
   document.getElementById('view-'+v).classList.add('active');
   document.querySelector(`[onclick="switchView('${v}')"]`).classList.add('active');
   document.getElementById('voice-bar').style.display=v==='chat'?'none':'block';
+  if(v!=='chat'&&typeof convActive!=='undefined'&&convActive)stopConversation();
   if(v==='calendar'){renderCalendar();renderSidebar();renderTodaySummary();}
   if(v==='intentions')renderIntentions();
   if(v==='contacts')renderContacts();
@@ -878,6 +889,147 @@ async function toggleMic(){
 }
 
 function stopMic(){if(recognition){try{recognition.stop();}catch(e){}}setRecording(false);}
+
+// ── MODO CONVERSA (voz contínua + TTS) ──
+let convActive=false;        // modo conversa ligado?
+let convRecognition=null;    // instância de reconhecimento do chat
+let convState='idle';        // idle | listening | thinking | speaking
+let ptVoice=null;            // voz pt-BR escolhida pro TTS
+
+function pickPtVoice(){
+  if(!('speechSynthesis' in window))return null;
+  const voices=speechSynthesis.getVoices();
+  if(!voices.length)return null;
+  // Preferir voz feminina pt-BR; senão qualquer pt-BR; senão qualquer pt
+  return voices.find(v=>/pt[-_]BR/i.test(v.lang)&&/female|mulher|luciana|fernanda|francisca|maria/i.test(v.name))
+       ||voices.find(v=>/pt[-_]BR/i.test(v.lang))
+       ||voices.find(v=>/^pt/i.test(v.lang))
+       ||null;
+}
+if('speechSynthesis' in window){
+  speechSynthesis.onvoiceschanged=()=>{ptVoice=pickPtVoice();};
+  ptVoice=pickPtVoice();
+}
+
+function setConvStatus(msg,state){
+  const el=document.getElementById('voice-conv-status');
+  const btn=document.getElementById('chat-voice-btn');
+  if(!el||!btn)return;
+  if(!msg){el.className='';el.innerHTML='';}
+  else{
+    const dotClass=state==='speaking'?'conv-dot speaking':'conv-dot';
+    el.className='show';
+    el.innerHTML=(state==='listening'||state==='speaking')?`<span class="${dotClass}"></span>${msg}`:msg;
+  }
+  btn.className=state==='listening'?'active':state==='speaking'?'speaking':'';
+  btn.textContent=convActive?'⏹':'🎙️';
+}
+
+function toggleConversation(){
+  if(convActive){stopConversation();return;}
+  startConversation();
+}
+
+async function startConversation(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){setConvStatus('Use o Chrome para conversar por voz','idle');setTimeout(()=>setConvStatus('',''),3000);return;}
+  if(!('speechSynthesis' in window)){setConvStatus('Seu navegador não suporta voz','idle');setTimeout(()=>setConvStatus('',''),3000);return;}
+  // Garantir permissão de microfone
+  try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});stream.getTracks().forEach(t=>t.stop());}
+  catch(err){setConvStatus('Microfone bloqueado','idle');setTimeout(()=>setConvStatus('',''),3000);return;}
+  convActive=true;
+  // "Acordar" a síntese de voz com um utterance vazio (requisito de alguns navegadores)
+  try{speechSynthesis.cancel();}catch(e){}
+  convListen();
+}
+
+function stopConversation(){
+  convActive=false;
+  convState='idle';
+  if(convRecognition){try{convRecognition.abort();}catch(e){}convRecognition=null;}
+  if('speechSynthesis' in window){try{speechSynthesis.cancel();}catch(e){}}
+  setConvStatus('','');
+}
+
+function convListen(){
+  if(!convActive)return;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  convRecognition=new SR();
+  convRecognition.lang='pt-BR';
+  convRecognition.continuous=false;
+  convRecognition.interimResults=true;
+  convState='listening';
+  let finalText='';
+  convRecognition.onstart=()=>{if(convActive)setConvStatus('Ouvindo... pode falar','listening');};
+  convRecognition.onresult=e=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    if(final)finalText+=final;
+    if(convActive)setConvStatus((finalText||interim)||'Ouvindo... pode falar','listening');
+  };
+  convRecognition.onerror=e=>{
+    if(!convActive)return;
+    if(e.error==='no-speech'){convListen();return;} // silêncio: reabre o mic
+    if(e.error==='aborted')return;
+    setConvStatus('Erro: '+e.error,'idle');
+    setTimeout(()=>{if(convActive)convListen();},1500);
+  };
+  convRecognition.onend=()=>{
+    if(!convActive)return;
+    const text=finalText.trim();
+    if(text)convRespond(text);
+    else convListen(); // nada captado: continua ouvindo
+  };
+  try{convRecognition.start();}catch(e){setTimeout(()=>{if(convActive)convListen();},400);}
+}
+
+async function convRespond(text){
+  if(!convActive)return;
+  convState='thinking';
+  setConvStatus('Claudia está pensando...','thinking');
+  // Reusa o mesmo histórico e contexto do chat de texto
+  chatHistory.push({role:'user',content:text});
+  renderChat();
+  const sys=`Você é a Claudia, secretária pessoal inteligente do ${currentUser?.user_metadata?.full_name||'usuário'}.
+
+${getContext()}
+
+Você está numa CONVERSA POR VOZ. Responda em português brasileiro, de forma natural, calorosa e CONCISA (como uma secretária falando ao telefone). Evite listas longas, markdown, asteriscos ou emojis — será lido em voz alta. Vá direto ao ponto e, quando fizer sentido, termine com uma pergunta curta pra manter a conversa.`;
+  try{
+    const msgs=chatHistory.filter(m=>!m.thinking).map(m=>({role:m.role,content:m.content}));
+    const answer=await callAPI(msgs,sys,800);
+    chatHistory.push({role:'assistant',content:answer});
+    renderChat();
+    if(convActive)convSpeak(answer);
+  }catch(e){
+    chatHistory.push({role:'assistant',content:'Erro: '+e.message});
+    renderChat();
+    if(convActive)convListen();
+  }
+}
+
+function convSpeak(text){
+  if(!convActive)return;
+  if(!('speechSynthesis' in window)){convListen();return;}
+  convState='speaking';
+  setConvStatus('Claudia está falando...','speaking');
+  // Limpa markdown/emojis pra leitura natural
+  const clean=text.replace(/[*_#`>]/g,'').replace(/\s+/g,' ').trim();
+  try{speechSynthesis.cancel();}catch(e){}
+  const utter=new SpeechSynthesisUtterance(clean);
+  utter.lang='pt-BR';
+  if(ptVoice)utter.voice=ptVoice;
+  utter.rate=1.05;utter.pitch=1.0;
+  utter.onend=()=>{if(convActive)convListen();}; // terminou de falar → religa o mic
+  utter.onerror=()=>{if(convActive)convListen();};
+  // Fallback: se o TTS travar, religa o mic depois de um tempo proporcional ao texto
+  const fallbackMs=Math.min(20000,2000+clean.length*60);
+  setTimeout(()=>{if(convActive&&convState==='speaking'){try{speechSynthesis.cancel();}catch(e){}convListen();}},fallbackMs);
+  speechSynthesis.speak(utter);
+}
 
 function setRecording(v){
   isRecording=v;
