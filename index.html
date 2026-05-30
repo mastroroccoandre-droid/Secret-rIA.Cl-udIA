@@ -219,6 +219,27 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
 .insights-note{font-size:12px;color:var(--text3);margin-top:4px;line-height:1.5}
 .insights-loading{display:flex;align-items:center;gap:10px;color:var(--text2);font-size:13px;padding:20px 0}
 .insights-loading .spin{display:block;position:static}
+#fin-month-nav{display:flex;align-items:center;justify-content:space-between;max-width:280px;margin-bottom:20px}
+#fin-month-label{font-family:'Playfair Display',serif;font-size:18px;font-weight:500;text-transform:capitalize}
+.fin-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.fin-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;border-top-width:3px}
+.fin-card.income{border-top-color:var(--green)}
+.fin-card.expense{border-top-color:var(--red)}
+.fin-card.balance{border-top-color:var(--accent)}
+.fin-num{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;line-height:1}
+.fin-num.pos{color:var(--green)}.fin-num.neg{color:var(--red)}
+.fin-lbl{font-size:12px;color:var(--text2);margin-top:6px}
+.fin-section-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:500;margin:0 0 14px}
+.tx-list{display:flex;flex-direction:column;gap:8px;margin-bottom:28px}
+.tx-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 16px;position:relative}
+.tx-icon{font-size:18px;flex-shrink:0}
+.tx-info{flex:1;min-width:0}
+.tx-desc{font-size:14px;color:var(--text);font-weight:500}
+.tx-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.tx-amount{font-size:14px;font-weight:600;flex-shrink:0}
+.tx-amount.income{color:var(--green)}.tx-amount.expense{color:var(--red)}
+.tx-del{width:24px;height:24px;border-radius:50%;border:none;background:var(--surface2);color:var(--text3);cursor:pointer;font-size:13px;flex-shrink:0;opacity:0;transition:opacity var(--transition)}
+.tx-row:hover .tx-del{opacity:1}
 .empty-text{font-size:14px;line-height:1.6}
 .ph{padding:28px 28px 0;flex-shrink:0}
 .ph-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:500;margin-bottom:4px}
@@ -281,6 +302,7 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
     <button class="nav-btn" onclick="switchView('intentions')">Intenções</button>
     <button class="nav-btn" onclick="switchView('contacts')">Contatos</button>
     <button class="nav-btn" onclick="switchView('insights')">Insights</button>
+    <button class="nav-btn" onclick="switchView('financas')">Finanças</button>
     <button class="nav-btn" onclick="switchView('chat')">Secretária</button>
   </div>
   <div id="header-actions">
@@ -353,6 +375,18 @@ button,input,textarea,select{font-family:'Instrument Sans',sans-serif}
     </div>
   </div>
 
+  <div id="view-financas" class="view" style="overflow-y:auto">
+    <div class="ph"><div class="ph-title">Finanças</div><div class="ph-sub">Lance gastos e receitas por voz ou texto — a Claudia categoriza</div></div>
+    <div class="list-wrap">
+      <div id="fin-month-nav">
+        <button class="cal-arrow" onclick="navFinMonth(-1)">‹</button>
+        <span id="fin-month-label"></span>
+        <button class="cal-arrow" onclick="navFinMonth(1)">›</button>
+      </div>
+      <div id="fin-content"></div>
+    </div>
+  </div>
+
   <div id="view-chat" class="view">
     <div id="chat-wrap">
       <div class="quick-chat-actions">
@@ -415,7 +449,7 @@ const REMINDER_OPTS=[
 ];
 
 let currentUser=null;
-let events=[],intentions=[],contacts=[],patterns=[],attendees={};
+let events=[],intentions=[],contacts=[],patterns=[],attendees={},transactions=[];
 let chatHistory=[];
 let currentDate=new Date(),selectedDate=new Date();
 let recognition=null,isRecording=false,pendingAI=null,attachedFile=null;
@@ -479,6 +513,9 @@ async function loadAll(){
   intentions=i.data||[];
   contacts=c.data||[];
   patterns=p.data||[];
+
+  const{data:txs}=await sb.from('transactions').select('*').order('date',{ascending:false});
+  transactions=txs||[];
 
   // Load attendees for all events
   const{data:atts}=await sb.from('event_attendees').select('*');
@@ -548,6 +585,17 @@ async function saveContact(c){
 async function deleteContactDB(id){
   await sb.from('contacts').delete().eq('id',id);
   contacts=contacts.filter(c=>c.id!==id);
+}
+
+async function saveTransaction(t){
+  t.owner_id=currentUser.id;
+  const{data,error}=await sb.from('transactions').insert(t).select();
+  if(error){console.error(error);alert('Erro: '+error.message);return null;}
+  transactions.unshift(data[0]);return data[0];
+}
+async function deleteTransactionDB(id){
+  await sb.from('transactions').delete().eq('id',id);
+  transactions=transactions.filter(t=>t.id!==id);
 }
 
 async function addAttendee(eventId,email){
@@ -747,6 +795,7 @@ function switchView(v){
   if(v==='intentions')renderIntentions();
   if(v==='contacts')renderContacts();
   if(v==='insights')renderInsights();
+  if(v==='financas')renderFinancas();
   if(v==='chat')renderChat();
 }
 
@@ -826,6 +875,69 @@ function renderContacts(){
     ?`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">👥</div><div class="empty-text">Nenhum contato ainda<br>Diga: "A minha esposa se chama Maria"</div></div>`
     :contacts.map(c=>`<div class="card"><div class="card-strip" style="background:var(--accent)"></div><div class="card-icon">👤</div><div class="card-title">${c.name}</div><div class="card-sub">${c.relation||'Contato'}</div><button class="card-del" onclick="event.stopPropagation();handleDeleteContact('${c.id}')">×</button></div>`).join('');
 }
+async function handleDeleteContact(id){await deleteContactDB(id);renderContacts()}
+
+// ── FINANÇAS ──
+let finDate=new Date(); // mês exibido
+const FIN_ICONS={mercado:'🛒',alimentacao:'🍽️',transporte:'🚗',moradia:'🏠',saude:'🏥',lazer:'🎬',educacao:'📚',compras:'🛍️',servicos:'🔧',salario:'💰',renda:'💵',outro:'💳'};
+function finIcon(cat,type){if(type==='income')return FIN_ICONS[cat]||'💵';return FIN_ICONS[cat]||'💳';}
+function brl(v){return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function navFinMonth(dir){finDate=new Date(finDate.getFullYear(),finDate.getMonth()+dir,1);renderFinancas();}
+
+function txInMonth(){
+  const y=finDate.getFullYear(),m=finDate.getMonth();
+  return transactions.filter(t=>{const d=dateFromISO(t.date);return d.getFullYear()===y&&d.getMonth()===m;});
+}
+
+function renderFinancas(){
+  document.getElementById('fin-month-label').textContent=`${MONTHS[finDate.getMonth()]} ${finDate.getFullYear()}`;
+  const txs=txInMonth().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const el=document.getElementById('fin-content');
+  const income=txs.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);
+  const expense=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
+  const balance=income-expense;
+
+  if(txs.length===0){
+    el.innerHTML=`<div class="fin-summary">
+        <div class="fin-card income"><div class="fin-num">${brl(0)}</div><div class="fin-lbl">Receitas</div></div>
+        <div class="fin-card expense"><div class="fin-num">${brl(0)}</div><div class="fin-lbl">Despesas</div></div>
+        <div class="fin-card balance"><div class="fin-num">${brl(0)}</div><div class="fin-lbl">Saldo</div></div>
+      </div>
+      <div class="empty"><div class="empty-icon">💳</div><div class="empty-text">Nenhum lançamento neste mês<br>Diga: "gastei 50 reais no mercado" ou "recebi 3000 de salário"</div></div>`;
+    return;
+  }
+
+  const summary=`<div class="fin-summary">
+      <div class="fin-card income"><div class="fin-num pos">${brl(income)}</div><div class="fin-lbl">Receitas</div></div>
+      <div class="fin-card expense"><div class="fin-num neg">${brl(expense)}</div><div class="fin-lbl">Despesas</div></div>
+      <div class="fin-card balance"><div class="fin-num ${balance>=0?'pos':'neg'}">${brl(balance)}</div><div class="fin-lbl">Saldo do mês</div></div>
+    </div>`;
+
+  const rows=txs.map(t=>{
+    const d=dateFromISO(t.date);
+    const dlabel=`${d.getDate()} ${MONTHS[d.getMonth()].substring(0,3)}`;
+    const sign=t.type==='income'?'+':'−';
+    return `<div class="tx-row">
+      <div class="tx-icon">${finIcon(t.category,t.type)}</div>
+      <div class="tx-info">
+        <div class="tx-desc">${t.description||'Lançamento'}</div>
+        <div class="tx-meta">${dlabel} · ${t.category||'outro'}</div>
+      </div>
+      <div class="tx-amount ${t.type}">${sign} ${brl(t.amount)}</div>
+      <button class="tx-del" onclick="handleDeleteTransaction('${t.id}')">×</button>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=summary+`<div class="fin-section-title">Lançamentos</div><div class="tx-list">${rows}</div>`;
+}
+
+async function handleDeleteTransaction(id){
+  await deleteTransactionDB(id);
+  renderFinancas();
+  showToast('Lançamento excluído');
+}
+
 async function handleDeleteContact(id){await deleteContactDB(id);renderContacts()}
 
 // ── INSIGHTS ──
@@ -948,6 +1060,16 @@ function renderChat(){
   el.scrollTop=el.scrollHeight;
 }
 
+function finContextStr(){
+  const now=new Date();
+  const m=transactions.filter(t=>{const d=dateFromISO(t.date);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();});
+  if(!m.length)return 'Nenhum lançamento este mês.';
+  const inc=m.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);
+  const exp=m.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
+  const ultimos=m.slice(0,8).map(t=>(t.type==='income'?'+':'-')+'R$'+Number(t.amount).toFixed(2)+' '+t.description+' ('+t.category+')').join(', ');
+  return 'Receitas: R$ '+inc.toFixed(2)+' | Despesas: R$ '+exp.toFixed(2)+' | Saldo: R$ '+(inc-exp).toFixed(2)+'. Últimos: '+ultimos;
+}
+
 function getContext(){
   const today=new Date();
   const topPatterns=patterns.filter(p=>p.confidence>=2).slice(0,15);
@@ -965,7 +1087,10 @@ INTENÇÕES:
 ${intentions.map(i=>`- ${i.title} (${LABELS[i.category]||i.category})`).join('\n')||'Nenhuma.'}
 
 PADRÕES IDENTIFICADOS (use para sugerir horários, locais, durações):
-${topPatterns.length?topPatterns.map(p=>`- ${p.pattern_type}: para ${p.context}, valor=${p.value} (confiança: ${p.confidence})`).join('\n'):'Ainda aprendendo.'}`;
+${topPatterns.length?topPatterns.map(p=>`- ${p.pattern_type}: para ${p.context}, valor=${p.value} (confiança: ${p.confidence})`).join('\n'):'Ainda aprendendo.'}
+
+FINANÇAS (mês atual):
+${finContextStr()}`;
 }
 
 async function sendChat(){
@@ -1253,7 +1378,7 @@ async function processWithImage(text,file){
 
 async function processInput(text){
   setStatus('Interpretando...','loading',true);
-  const sys=`Você é a Claudia, secretária. Hoje é ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.\n\n${getContext()}\n\nResponda SOMENTE com JSON.\n\nTipos:\n1. Evento: {"type":"event","title":"...","date":"YYYY-MM-DD","time":"HH:MM","category":"trabalho|saude|lazer|familia|pessoal|outro","location":"...","notes":"...","eventType":"individual|conjunto","confidence":"alta|media|baixa","missingInfo":null,"recurrence":"none|daily|weekly|monthly|yearly","reminderMinutes":null|5|15|30|60|1440}\n2. Intenção: {"type":"intention","title":"...","category":"..."}\n3. Contato: {"type":"contact","name":"...","relation":"...","notes":"..."}\n4. Pergunta: {"type":"question","answer":"resposta natural"}\n5. Cancelamento: {"type":"action","action":"cancel","eventTitle":"...","answer":"..."}\n\nUse padrões para sugerir horários/locais quando não especificados. Identifique pessoas pelos contatos.`;
+  const sys=`Você é a Claudia, secretária. Hoje é ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.\n\n${getContext()}\n\nResponda SOMENTE com JSON.\n\nTipos:\n1. Evento: {"type":"event","title":"...","date":"YYYY-MM-DD","time":"HH:MM","category":"trabalho|saude|lazer|familia|pessoal|outro","location":"...","notes":"...","eventType":"individual|conjunto","confidence":"alta|media|baixa","missingInfo":null,"recurrence":"none|daily|weekly|monthly|yearly","reminderMinutes":null|5|15|30|60|1440}\n2. Intenção: {"type":"intention","title":"...","category":"..."}\n3. Contato: {"type":"contact","name":"...","relation":"...","notes":"..."}\n4. Pergunta: {"type":"question","answer":"resposta natural"}\n5. Cancelamento: {"type":"action","action":"cancel","eventTitle":"...","answer":"..."}\n6. Finança (gasto ou recebimento de dinheiro): {"type":"transaction","txType":"expense|income","amount":150.50,"description":"breve descrição","category":"mercado|alimentacao|transporte|moradia|saude|lazer|educacao|compras|servicos|salario|renda|outro","date":"YYYY-MM-DD","confidence":"alta|media|baixa"}\n\nRegras de finança: "gastei/paguei/comprei/custou" = expense. "recebi/ganhei/entrou/salário" = income. Escolha a categoria pelo bom senso (ex: mercado/supermercado=mercado, uber/gasolina=transporte, aluguel/luz=moradia, restaurante=alimentacao, salário=salario). Se não disser a data, use hoje. amount é número (use ponto decimal).\n\nUse padrões para sugerir horários/locais quando não especificados. Identifique pessoas pelos contatos.`;
   try{
     const raw=await callAPI([{role:'user',content:text}],sys,700);
     pendingAI={...JSON.parse(raw.replace(/```json|```/g,'').trim()),originalText:text};
@@ -1309,6 +1434,16 @@ function showModal(){
     html=`<div class="modal-header"><div class="modal-title">Confirmar ação</div><button class="modal-close" onclick="closeModal()">×</button></div>
     <div style="font-size:14px;line-height:1.7;margin-bottom:24px">${pendingAI.answer}</div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Não</button><button class="btn-primary" onclick="confirmAction()">Sim</button></div>`;
+  }else if(type==='transaction'){
+    const isInc=pendingAI.txType==='income';
+    const cc={alta:'var(--green)',media:'var(--yellow)',baixa:'var(--red)'}[pendingAI.confidence]||'var(--text3)';
+    html=`<div class="modal-header"><div><div class="modal-title">${isInc?'💵 Nova Receita':'💳 Nova Despesa'}</div><span class="conf-badge" style="color:${cc};border-color:${cc}">${(pendingAI.confidence||'').toUpperCase()}</span></div><button class="modal-close" onclick="closeModal()">×</button></div>
+    ${mf('💲','Valor',brl(pendingAI.amount||0))}
+    ${mf('📝','Descrição',pendingAI.description)}
+    ${mf('🏷️','Categoria',pendingAI.category||'outro')}
+    ${mf('📅','Data',pendingAI.date)}
+    ${mf('↕️','Tipo',isInc?'Receita (entrada)':'Despesa (saída)')}
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button><button class="btn-primary" onclick="confirmTransaction()">Confirmar</button></div>`;
   }else{
     html=`<div class="modal-header"><div class="modal-title">Atenção</div><button class="modal-close" onclick="closeModal()">×</button></div>
     <div style="font-size:14px;color:var(--red);margin-bottom:20px">${pendingAI.answer||'Não consegui interpretar.'}</div>
@@ -1375,6 +1510,20 @@ async function confirmContact(){
   closeModal();
   if(document.getElementById('view-contacts').classList.contains('active'))renderContacts();
   showToast('Contato salvo ✓');
+}
+
+async function confirmTransaction(){
+  if(!pendingAI||pendingAI.type!=='transaction')return;
+  const s=pendingAI;
+  const t={id:uid(),type:s.txType==='income'?'income':'expense',amount:Number(s.amount)||0,description:s.description||'Lançamento',category:s.category||'outro',date:s.date||todayISO()};
+  const saved=await saveTransaction(t);
+  closeModal();
+  if(saved){
+    const[y,m]=(s.date||todayISO()).split('-');
+    finDate=new Date(+y,+m-1,1);
+    switchView('financas');
+  }
+  showToast(t.type==='income'?'Receita registrada ✓':'Despesa registrada ✓');
 }
 
 async function confirmAction(){
